@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Shintio.Trader.Configuration;
 using Shintio.Trader.Database.Contexts;
 using Shintio.Trader.Services;
 
@@ -12,10 +13,11 @@ using Shintio.Trader.Services;
 
 var appBuilder = WebApplication.CreateBuilder();
 
+appBuilder.Services.Configure<TelegramSecrets>(appBuilder.Configuration.GetSection("Telegram"));
+
 appBuilder.Services.AddControllers();
 
 appBuilder.Services
-    .AddHostedService<AppService>()
     .AddPooledDbContextFactory<AppDbContext>((serviceProvider, builder) =>
     {
         var connection = serviceProvider.GetRequiredService<IConfiguration>()
@@ -28,6 +30,11 @@ appBuilder.Services
                 (RelationalEventId.ConnectionOpened, LogLevel.Debug),
                 (RelationalEventId.ConnectionClosed, LogLevel.Debug)));
     });
+
+appBuilder.Services.AddMessagePipe();
+
+appBuilder.Services.AddHostedService<AppService>();
+appBuilder.Services.AddHostedService<TelegramUserBotService>();
 
 #endregion
 
