@@ -82,6 +82,50 @@ public class UserBotClient
 		}
 	}
 
+	// public async Task<TdApi.Messages> GetChatHistory(long chatId, int limit)
+	// {
+	// 	await _client.ExecuteAsync(new TdApi.GetChats { Limit = 1 });
+	// 	await _client.ExecuteAsync(new TdApi.GetChat { ChatId = chatId });
+	//
+	// 	return await _client.ExecuteAsync(new TdApi.GetChatHistory
+	// 	{
+	// 		ChatId = chatId,
+	// 		Limit = limit,
+	// 		OnlyLocal = false,
+	// 	});
+	// }
+
+	public async Task<List<TdApi.Message>> GetChatHistory(long chatId, int totalLimit)
+	{
+		await _client.ExecuteAsync(new TdApi.GetChats { Limit = 1 });
+		await _client.ExecuteAsync(new TdApi.GetChat { ChatId = chatId });
+		
+		var result = new List<TdApi.Message>();
+		long fromMessageId = 0;
+
+		while (result.Count < totalLimit)
+		{
+			var messages = await _client.ExecuteAsync(new TdApi.GetChatHistory
+			{
+				ChatId = chatId,
+				Limit = Math.Min(100, totalLimit - result.Count),
+				FromMessageId = fromMessageId,
+				Offset = 0,
+				OnlyLocal = false,
+			});
+
+			if (messages.Messages_.Length == 0)
+				break;
+
+			result.AddRange(messages.Messages_);
+
+			// Получаем ID последнего сообщения для следующего запроса
+			fromMessageId = messages.Messages_[^1].Id;
+		}
+
+		return result;
+	}
+
 	public async Task ForwardMessage(long fromId, long messageId, long toId, long threadId = 0)
 	{
 		try

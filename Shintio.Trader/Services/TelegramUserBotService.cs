@@ -1,15 +1,20 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Text.Json;
+using Binance.Net.Interfaces.Clients;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Shintio.Trader.Common;
 using Shintio.Trader.Configuration;
 using Shintio.Trader.Database.Contexts;
+using Shintio.Trader.Utils;
+using TdLib;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.InlineQueryResults;
 
 namespace Shintio.Trader.Services;
 
@@ -20,15 +25,17 @@ public class TelegramUserBotService : BackgroundService
     private readonly ILogger<UserBotClient> _userBotLogger;
     private readonly TelegramSecrets _telegramSecrets;
     private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
+    private readonly IBinanceRestClient _binanceClient;
 
     private UserBotClient _userBot = null!;
-    private ITelegramBotClient _bot = null!;
+    public ITelegramBotClient _bot = null!;
 
     public TelegramUserBotService(
         IHostApplicationLifetime lifetime,
         ILogger<TelegramUserBotService> logger,
         IOptions<TelegramSecrets> telegramSecrets,
         ILogger<UserBotClient> userBotLogger,
+        IBinanceRestClient binanceClient,
         IDbContextFactory<AppDbContext> dbContextFactory
     )
     {
@@ -37,6 +44,7 @@ public class TelegramUserBotService : BackgroundService
         _telegramSecrets = telegramSecrets.Value;
         _userBotLogger = userBotLogger;
         _dbContextFactory = dbContextFactory;
+        _binanceClient = binanceClient;
     }
 
     public override Task StartAsync(CancellationToken cancellationToken)
@@ -87,13 +95,39 @@ public class TelegramUserBotService : BackgroundService
             _logger.LogInformation("Bot started for {PhoneNumber}!", phoneNumber);
         }
 
-        _userBot.MessageReceived += UserBotOnMessageReceived;
+        // var messages = await _userBot.GetChatHistory(-1002657875280, 500);
+        //
+        // messages.Reverse();
+        //
+        // Console.WriteLine(messages.Count);
+        //
+        // File.WriteAllText("messages.json", JsonSerializer.Serialize(messages
+        //     .Select(FetchText)
+        //     .OfType<string>()));
 
-        await _userBot.SendMessage(384118725, "Yoba, eto ti?");
+        _userBot.MessageReceived += UserBotOnMessageReceived;
     }
+
+    private string? FetchText(TdApi.Message message) =>
+        message.Content switch
+        {
+            TdApi.MessageContent.MessageText textMessage => textMessage.Text.Text,
+            TdApi.MessageContent.MessagePhoto photoMessage => photoMessage.Caption.Text,
+            TdApi.MessageContent.MessageVideo videoMessage => videoMessage.Caption.Text,
+            TdApi.MessageContent.MessageDocument documentMessage => documentMessage.Caption.Text,
+            _ => null
+        };
 
     private async void UserBotOnMessageReceived(long chatId, long? senderId, string message, string title)
     {
+        if (chatId != -1002657875280 && chatId != -4645156321)
+        {
+            return;
+        }
+
+        var parser = new MessageParser(_binanceClient, _bot, _logger);
+        
+        await parser.Parse(message);
         _logger.LogInformation("[UserBot] Message from {senderId} in {chatId}: {message}", senderId, chatId, message);
     }
 
