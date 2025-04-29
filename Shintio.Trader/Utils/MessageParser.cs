@@ -14,6 +14,10 @@ public class MessageParser
 	private readonly ITelegramBotClient _telegramBot;
 	private readonly ILogger<TelegramUserBotService> _logger;
 
+	private const decimal UsdtQuantity = 3;
+	private const decimal MinBalance = 100;
+	private const int Leverage = 10;
+
 	public MessageParser(IBinanceRestClient binanceClient, ITelegramBotClient telegramBot, ILogger<TelegramUserBotService> logger)
 	{
 		_binanceClient = binanceClient;
@@ -87,14 +91,14 @@ public class MessageParser
 			.Data
 			.Where(b => b.Asset == "USDT")
 			.Sum(b => b.WalletBalance);
-		if (balance < 150)
+		if (balance < MinBalance)
 		{
 			Log($"[{pair}] Текущий баланс ниже порога: {balance}");
 
 			return;
 		}
 
-		var leverageResult = await _binanceClient.UsdFuturesApi.Account.ChangeInitialLeverageAsync(pair, 20);
+		var leverageResult = await _binanceClient.UsdFuturesApi.Account.ChangeInitialLeverageAsync(pair, Leverage);
 		if (!leverageResult.Success)
 		{
 			Log($"[{pair}] Ошибка установки плеча: {leverageResult.Error}");
@@ -128,7 +132,7 @@ public class MessageParser
 			}
 
 			var currentPrice = tickerData.Data.LastPrice;
-			var usdtAmount = 15m;
+			var usdtAmount = UsdtQuantity;
 			var quantity = Math.Round((usdtAmount * leverageResult.Data.Leverage) / currentPrice, quantityPrecision);
 
 			var positionResult = await _binanceClient.UsdFuturesApi.Trading.PlaceOrderAsync(
@@ -203,7 +207,7 @@ public class MessageParser
 			}
 
 			var currentPrice = tickerData.Data.LastPrice;
-			var usdtAmount = 15m;
+			var usdtAmount = UsdtQuantity;
 			var quantity = Math.Round((usdtAmount * leverageResult.Data.Leverage) / currentPrice, quantityPrecision);
 
 			var positionResult = await _binanceClient.UsdFuturesApi.Trading.PlaceOrderAsync(
