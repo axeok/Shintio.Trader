@@ -175,6 +175,8 @@ public class TelegramUserBotService : BackgroundService
                 return;
             }
         }
+
+        await botClient.SendMessage(message.Chat.Id, "Живой", cancellationToken: cancellationToken);
     }
 
     private Task HandleErrorAsync(
