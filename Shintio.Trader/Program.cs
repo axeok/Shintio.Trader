@@ -70,10 +70,10 @@ app.MapControllers();
 
 app.MapGet("/", () => Results.Ok(new { status = "ok", timestamp = DateTimeOffset.UtcNow }));
 
-await using (var context = app.Services.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext())
-{
-	await context.Database.MigrateAsync();
-}
+// await using (var context = app.Services.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext())
+// {
+// 	await context.Database.MigrateAsync();
+// }
 
 await app.RunAsync();
 

@@ -24,7 +24,7 @@ public class TelegramUserBotService : BackgroundService
     private readonly ILogger<TelegramUserBotService> _logger;
     private readonly ILogger<UserBotClient> _userBotLogger;
     private readonly TelegramSecrets _telegramSecrets;
-    private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
+    // private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
     private readonly IBinanceRestClient _binanceClient;
 
     private UserBotClient _userBot = null!;
@@ -35,15 +35,15 @@ public class TelegramUserBotService : BackgroundService
         ILogger<TelegramUserBotService> logger,
         IOptions<TelegramSecrets> telegramSecrets,
         ILogger<UserBotClient> userBotLogger,
-        IBinanceRestClient binanceClient,
-        IDbContextFactory<AppDbContext> dbContextFactory
+        IBinanceRestClient binanceClient
+        // IDbContextFactory<AppDbContext> dbContextFactory
     )
     {
         _lifetime = lifetime;
         _logger = logger;
         _telegramSecrets = telegramSecrets.Value;
         _userBotLogger = userBotLogger;
-        _dbContextFactory = dbContextFactory;
+        // _dbContextFactory = dbContextFactory;
         _binanceClient = binanceClient;
     }
 
