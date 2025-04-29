@@ -15,7 +15,7 @@ public class MessageParser
 	private readonly ILogger<TelegramUserBotService> _logger;
 
 	private const decimal UsdtQuantity = 3;
-	private const decimal MinBalance = 100;
+	private const decimal MinBalance = 150;
 	private const int Leverage = 10;
 
 	public MessageParser(IBinanceRestClient binanceClient, ITelegramBotClient telegramBot, ILogger<TelegramUserBotService> logger)
