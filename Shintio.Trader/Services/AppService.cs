@@ -58,6 +58,8 @@ public class AppService : BackgroundService
 
 	private async Task Test()
 	{
+		await FetchData();
+
 		// var result = await _binanceClient.UsdFuturesApi.Account.GetBalancesAsync();
 		//
 		// foreach (var balance in result.Data)
@@ -132,72 +134,77 @@ public class AppService : BackgroundService
 	//     predictor.Train(db.KlineItemTable.All.ToArray());
 	// }
 	//
-	// private async Task FetchData()
-	// {
-	//     var step = TimeSpan.FromMinutes(5);
-	//     var startTime = DateTime.UtcNow - TimeSpan.FromDays(365 * 5);
-	//     var endTime = DateTime.UtcNow;
-	//     var allKlines = new List<IBinanceKline>();
-	//
-	//     Directory.CreateDirectory("Data");
-	//
-	//     var i = 0;
-	//     
-	//     try
-	//     {
-	//         while (startTime < endTime)
-	//         {
-	//             var result = await _binanceClient.SpotApi.ExchangeData.GetKlinesAsync(
-	//                 CurrencyPair.ETH_USDT,
-	//                 KlineInterval.FiveMinutes,
-	//                 startTime,
-	//                 endTime,
-	//                 limit: 1000
-	//             );
-	//
-	//             if (!result.Data.Any())
-	//                 break;
-	//             
-	//             // File.WriteAllText($"Data/{i++}.json", JsonSerializer.Serialize(result.Data));
-	//             allKlines.AddRange(result.Data);
-	//
-	//             startTime = result.Data.Last().OpenTime.Add(step);
-	//
-	//             Console.WriteLine($"{startTime} - {endTime - startTime}");
-	//         }
-	//     }
-	//     catch (Exception ex)
-	//     {
-	//         _logger.LogError(ex, "{Name}", ex.Message);
-	//     }
-	//
-	//     // Console.WriteLine(string.Join("\n", result.Data.Select(k => $"{k.OpenTime} - {k.CloseTime}: {GetAveragePrice(k)}")));
-	//
-	//     // var builder = new DatabaseBuilder();
-	//     //
-	//     // var items = allKlines.Select(k => new KlineItem
-	//     // {
-	//     //     OpenTime = k.OpenTime,
-	//     //     CloseTime = k.CloseTime,
-	//     //     OpenPrice = k.OpenPrice,
-	//     //     ClosePrice = k.ClosePrice,
-	//     //     LowPrice = k.LowPrice,
-	//     //     HighPrice = k.HighPrice,
-	//     //     Volume = k.Volume,
-	//     //     BuyVolume = k.TakerBuyBaseVolume,
-	//     // }).ToArray();
-	//     //
-	//     // builder.Append(items);
-	//     //
-	//     // var data = builder.Build();
-	//
-	//     File.WriteAllText("Data/all.json", JsonSerializer.Serialize(allKlines));
-	//     
-	//     Console.WriteLine($"Data saved! Count: {allKlines.Count}");
-	// }
-	//
-	// private decimal GetAveragePrice(KlineItem kline)
-	// {
-	//     return (kline.ClosePrice + kline.OpenPrice + kline.HighPrice + kline.LowPrice) / 4;
-	// }
+	private async Task FetchData()
+	{
+		var step = TimeSpan.FromSeconds(1);
+		var range = TimeSpan.FromDays(30 * 6);
+		var interval = KlineInterval.OneSecond;
+		
+	    var startTime = DateTime.UtcNow - range;
+	    var endTime = DateTime.UtcNow;
+	    var allKlines = new List<IBinanceKline>();
+
+	    var path = Path.Combine("BinanceData", interval.ToString());
+	
+	    Directory.CreateDirectory(path);
+	
+	    var i = 0;
+	    
+	    try
+	    {
+	        while (startTime < endTime)
+	        {
+	            var result = await _binanceClient.SpotApi.ExchangeData.GetKlinesAsync(
+	                CurrencyPair.ETH_USDT,
+	                interval,
+	                startTime,
+	                endTime,
+	                limit: 1000
+	            );
+	
+	            if (!result.Data.Any())
+	                break;
+
+	            File.WriteAllText(Path.Combine(path, $"{i++}.json"), JsonSerializer.Serialize(result.Data));
+	            allKlines.AddRange(result.Data);
+	
+	            startTime = result.Data.Last().OpenTime.Add(step);
+	
+	            Console.WriteLine($"{startTime} - {endTime - startTime}");
+	        }
+	    }
+	    catch (Exception ex)
+	    {
+	        _logger.LogError(ex, "{Name}", ex.Message);
+	    }
+	
+	    // Console.WriteLine(string.Join("\n", result.Data.Select(k => $"{k.OpenTime} - {k.CloseTime}: {GetAveragePrice(k)}")));
+	
+	    // var builder = new DatabaseBuilder();
+	    //
+	    // var items = allKlines.Select(k => new KlineItem
+	    // {
+	    //     OpenTime = k.OpenTime,
+	    //     CloseTime = k.CloseTime,
+	    //     OpenPrice = k.OpenPrice,
+	    //     ClosePrice = k.ClosePrice,
+	    //     LowPrice = k.LowPrice,
+	    //     HighPrice = k.HighPrice,
+	    //     Volume = k.Volume,
+	    //     BuyVolume = k.TakerBuyBaseVolume,
+	    // }).ToArray();
+	    //
+	    // builder.Append(items);
+	    //
+	    // var data = builder.Build();
+	
+	    File.WriteAllText("Data/all.json", JsonSerializer.Serialize(allKlines));
+	    
+	    Console.WriteLine($"Data saved! Count: {allKlines.Count}");
+	}
+	
+	private decimal GetAveragePrice(KlineItem kline)
+	{
+	    return (kline.ClosePrice + kline.OpenPrice + kline.HighPrice + kline.LowPrice) / 4;
+	}
 }

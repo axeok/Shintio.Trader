@@ -154,6 +154,22 @@ public class UserBotClient
 		}
 	}
 
+	public async Task StartCall(long chatId)
+	{
+		await _client.ExecuteAsync(new TdApi.GetChats { Limit = 1 });
+		await _client.ExecuteAsync(new TdApi.GetChat { ChatId = chatId });
+		
+		var protocol = new TdApi.CallProtocol
+		{
+			UdpP2p = true,
+			UdpReflector = true,
+			MinLayer = 65,
+			MaxLayer = 65
+		};
+
+		var call = await _client.CreateCallAsync(chatId, protocol);
+	}
+
 	public bool TrySetCode(string code)
 	{
 		if (_codeSource != null)
