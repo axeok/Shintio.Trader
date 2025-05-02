@@ -11,7 +11,10 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Shintio.Trader.Configuration;
 using Shintio.Trader.Database.Contexts;
+using Shintio.Trader.Interfaces;
 using Shintio.Trader.Services;
+using Shintio.Trader.Services.Background;
+using Shintio.Trader.Services.Strategies;
 
 #region Builder
 
@@ -51,10 +54,17 @@ appBuilder.Services.AddSingleton<IBinanceRestClient>(p =>
 	});
 });
 
-appBuilder.Services.AddSingleton<TelegramUserBotService>();
-appBuilder.Services.AddHostedService(sp => sp.GetRequiredService<TelegramUserBotService>());
+appBuilder.Services.AddSingleton<BinanceService>();
+appBuilder.Services.AddSingleton<SandboxService>();
 
-appBuilder.Services.AddHostedService<AppService>();
+// appBuilder.Services.AddSingleton<IStrategy, TestStrategy>();
+appBuilder.Services.AddSingleton<IStrategy, GlebStrategy>();
+
+// appBuilder.Services.AddSingleton<TelegramUserBotService>();
+// appBuilder.Services.AddHostedService(sp => sp.GetRequiredService<TelegramUserBotService>());
+//
+// appBuilder.Services.AddHostedService<AppService>();
+appBuilder.Services.AddHostedService<StrategiesRunner>();
 
 #endregion
 

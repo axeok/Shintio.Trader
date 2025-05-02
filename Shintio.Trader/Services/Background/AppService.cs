@@ -1,17 +1,12 @@
-using System.IO.Compression;
 using System.Text.Json;
 using Binance.Net.Enums;
 using Binance.Net.Interfaces;
 using Binance.Net.Interfaces.Clients;
-using Binance.Net.Objects.Models.Spot;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.ML;
 using Shintio.Trader.Enums;
-using Shintio.Trader.Tables;
-using Shintio.Trader.Utils;
 
-namespace Shintio.Trader.Services;
+namespace Shintio.Trader.Services.Background;
 
 public class AppService : BackgroundService
 {

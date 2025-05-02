@@ -4,6 +4,7 @@ using Binance.Net.Enums;
 using Binance.Net.Interfaces.Clients;
 using Microsoft.Extensions.Logging;
 using Shintio.Trader.Services;
+using Shintio.Trader.Services.Background;
 using Telegram.Bot;
 
 namespace Shintio.Trader.Utils;

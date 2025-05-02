@@ -1,22 +1,17 @@
-﻿using System.Text.Json;
-using Binance.Net.Interfaces.Clients;
-using Microsoft.EntityFrameworkCore;
+﻿using Binance.Net.Interfaces.Clients;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Shintio.Trader.Common;
 using Shintio.Trader.Configuration;
-using Shintio.Trader.Database.Contexts;
 using Shintio.Trader.Utils;
 using TdLib;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
-using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.InlineQueryResults;
 
-namespace Shintio.Trader.Services;
+namespace Shintio.Trader.Services.Background;
 
 public class TelegramUserBotService : BackgroundService
 {
