@@ -16,8 +16,7 @@ public static class StrategyHelper
 
 	public static string GetLogString(TradeAccount account, decimal currentPrice)
 	{
-		var longs = account.Longs.ToArray();
-		var shorts = account.Longs.ToArray();
+		var (longs, shorts) = account.LongsAndShorts;
 
 		var longsSum = longs.Sum(o => o.CalculateCurrentQuantity(currentPrice));
 		var shortsSum = shorts.Sum(o => o.CalculateCurrentQuantity(currentPrice));

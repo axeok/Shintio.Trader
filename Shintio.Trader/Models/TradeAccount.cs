@@ -27,6 +27,8 @@ public class TradeAccount
 	public IEnumerable<Order> Longs => Orders.Where(o => !o.IsShort);
 	public IEnumerable<Order> Shorts => Orders.Where(o => o.IsShort);
 
+	public (Order[] longs, Order[] shorts) LongsAndShorts => (Longs.ToArray(), Shorts.ToArray());
+	
 	#region Orders
 
 	public bool TryOpenOrder(
