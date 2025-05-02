@@ -14,6 +14,6 @@ public record KlineItem
     public required decimal LowPrice { get; init; }
     public required decimal HighPrice { get; init; }
     public required decimal Volume { get; init; }
-    public required decimal BuyVolume { get; init; }
-    public required decimal SellVolume { get; init; }
+    public required int TradeCount { get; init; }
+    public required decimal TakerBuyBaseVolume { get; init; }
 }
