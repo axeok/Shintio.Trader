@@ -5,6 +5,9 @@ namespace Shintio.Trader.Interfaces;
 
 public interface IStrategy
 {
+	public virtual bool AutoProcessMarket => true;
+	public virtual int RunStep => 1;
+	
 	public decimal InitialBalance { get; }
 
 	public bool ValidateBalance(TradeAccount account, decimal balanceToRemove);

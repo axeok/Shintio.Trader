@@ -66,7 +66,15 @@ public class StrategiesRunner : BackgroundService
 			{
 				var account = accounts[strategy];
 
-				strategy.Run(account, currentPrice, history, i);
+				if (strategy.AutoProcessMarket)
+				{
+					account.ProcessMarket(currentPrice);
+				}
+
+				if (i % strategy.RunStep == 0)
+				{
+					strategy.Run(account, currentPrice, history, i);
+				}
 			});
 
 			i++;

@@ -7,6 +7,7 @@ namespace Shintio.Trader.Services.Strategies;
 
 public class GlebStrategy : IStrategy
 {
+	public int RunStep => 60;
 	public decimal InitialBalance => 20_000m;
 
 	private decimal Quantity { get; } = 1m;
@@ -16,7 +17,6 @@ public class GlebStrategy : IStrategy
 	private decimal StopLossMultiplier { get; } = 0.2m;
 
 	private int AverageCount { get; } = 60 * 60 * 24;
-	private int OrderStep { get; } = 60;
 
 	public bool ValidateBalance(TradeAccount account, decimal balanceToRemove)
 	{
@@ -34,23 +34,20 @@ public class GlebStrategy : IStrategy
 			.Take(AverageCount)
 			.Average(x => x.OpenPrice);
 
-		if (i % OrderStep == 0)
-		{
-			account.TryOpenLong(
-				currentPrice,
-				Quantity,
-				Leverage,
-				currentPrice + 0.05m,
-				average - average * StopLossMultiplier
-			);
+		account.TryOpenLong(
+			currentPrice,
+			Quantity,
+			Leverage,
+			null,
+			null
+		);
 
-			account.TryOpenShort(
-				currentPrice,
-				Quantity,
-				Leverage,
-				currentPrice - 0.05m,
-				average + average * StopLossMultiplier
-			);
-		}
+		account.TryOpenShort(
+			currentPrice,
+			Quantity,
+			Leverage,
+			null,
+			null
+		);
 	}
 }

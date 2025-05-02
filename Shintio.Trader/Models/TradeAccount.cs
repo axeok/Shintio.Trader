@@ -39,7 +39,7 @@ public class TradeAccount
 	)
 	{
 		var commission = quantity * 2 * CommissionPercent * leverage;
-		var balanceToRemove = quantity * 2 + commission;
+		var balanceToRemove = quantity + commission;
 		if (!_validateBalance.Invoke(this, balanceToRemove))
 		{
 			return false;
