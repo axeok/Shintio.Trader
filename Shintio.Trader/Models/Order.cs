@@ -46,4 +46,11 @@ public record Order(
 			: TakeProfitPrice != null && currentPrice >= TakeProfitPrice ||
 			  (StopLossPrice != null && currentPrice <= StopLossPrice);
 	}
+
+	public bool NeedToOpenPrice(decimal currentPrice)
+	{
+		return IsShort
+			? currentPrice >= Price
+			: currentPrice <= Price;
+	}
 };

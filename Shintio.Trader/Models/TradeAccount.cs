@@ -22,9 +22,12 @@ public class TradeAccount
 	public decimal PayedCommission { get; set; } = 0;
 
 	public List<Order> Orders { get; } = new();
+	public List<Order> PendingOrders { get; } = new();
 
 	public IEnumerable<Order> Longs => Orders.Where(o => !o.IsShort);
 	public IEnumerable<Order> Shorts => Orders.Where(o => o.IsShort);
+
+	#region Orders
 
 	public bool TryOpenOrder(
 		bool isShort,
@@ -44,9 +47,9 @@ public class TradeAccount
 
 		Balance -= balanceToRemove;
 		PayedCommission += commission;
-		
+
 		AddOrder(new Order(isShort, price, quantity, leverage, takeProfit, stopLoss));
-		
+
 		return true;
 	}
 
@@ -55,11 +58,6 @@ public class TradeAccount
 
 	public bool TryOpenShort(decimal price, decimal quantity, decimal leverage, decimal? takeProfit, decimal? stopLoss)
 		=> TryOpenOrder(true, price, quantity, leverage, takeProfit, stopLoss);
-
-	public void AddOrder(Order order)
-	{
-		Orders.Add(order);
-	}
 
 	public decimal CloseOrder(Order order, decimal currentPrice)
 	{
@@ -71,6 +69,42 @@ public class TradeAccount
 
 		return quantity;
 	}
+
+	#endregion
+
+	#region PendingOrders
+
+	public void AddPendingOrder(Order order)
+	{
+		PendingOrders.Add(order);
+	}
+
+	public void AddPendingLong(
+		decimal price,
+		decimal quantity,
+		decimal leverage,
+		decimal? takeProfit,
+		decimal? stopLoss
+	)
+		=> AddPendingOrder(new Order(false, price, quantity, leverage, takeProfit, stopLoss));
+
+	public void AddPendingShort(
+		decimal price,
+		decimal quantity,
+		decimal leverage,
+		decimal? takeProfit,
+		decimal? stopLoss
+	)
+		=> AddPendingOrder(new Order(true, price, quantity, leverage, takeProfit, stopLoss));
+
+	public void AddOrder(Order order)
+	{
+		Orders.Add(order);
+	}
+
+	#endregion
+
+	#region Market
 
 	public decimal TryCloseTakeProfitAndStopLoss(
 		decimal currentPrice,
@@ -96,6 +130,37 @@ public class TradeAccount
 		return result;
 	}
 
+	public decimal TryOpenPendingOrders(decimal currentPrice)
+	{
+		var result = 0m;
+
+		foreach (var order in PendingOrders.ToArray())
+		{
+			if (
+				!order.NeedToOpenPrice(currentPrice) ||
+				!TryOpenOrder(order.IsShort, order.Price, order.Quantity, order.Leverage, order.TakeProfitPrice,
+					order.StopLossPrice)
+			)
+			{
+				continue;
+			}
+
+			PendingOrders.Remove(order);
+			result += order.Quantity;
+		}
+
+		return result;
+	}
+
+	public decimal ProcessMarket(decimal currentPrice)
+	{
+		return TryOpenPendingOrders(currentPrice) + TryCloseTakeProfitAndStopLoss(currentPrice);
+	}
+
+	#endregion
+
+	#region Utils
+
 	public decimal CalculateOrdersCurrentQuantity(decimal currentPrice)
 	{
 		return Orders.Sum(o => o.CalculateCurrentQuantity(currentPrice));
@@ -105,4 +170,6 @@ public class TradeAccount
 	{
 		return Balance + CalculateOrdersCurrentQuantity(currentPrice);
 	}
+
+	#endregion
 }

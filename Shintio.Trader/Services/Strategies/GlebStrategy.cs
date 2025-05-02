@@ -33,8 +33,6 @@ public class GlebStrategy : IStrategy
 		var average = history.Skip(i - AverageCount)
 			.Take(AverageCount)
 			.Average(x => x.OpenPrice);
-		
-		account.TryCloseTakeProfitAndStopLoss(currentPrice);
 
 		if (i % OrderStep == 0)
 		{
