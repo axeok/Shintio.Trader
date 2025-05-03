@@ -2,7 +2,7 @@
 
 public class TradeAccount
 {
-	public delegate bool ValidateBalanceDelegate(TradeAccount tradeAccount, decimal balanceToRemove);
+	public delegate bool ValidateBalanceDelegate(TradeAccount tradeAccount, decimal balanceToRemove, decimal currentPrice);
 
 	private readonly ValidateBalanceDelegate _validateBalance;
 
@@ -42,7 +42,7 @@ public class TradeAccount
 	{
 		var commission = quantity * 2 * CommissionPercent * leverage;
 		var balanceToRemove = quantity + commission;
-		if (!_validateBalance.Invoke(this, balanceToRemove))
+		if (!_validateBalance.Invoke(this, balanceToRemove, price))
 		{
 			return false;
 		}

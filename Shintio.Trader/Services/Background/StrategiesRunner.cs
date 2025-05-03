@@ -12,7 +12,9 @@ public class StrategiesRunner : BackgroundService
 {
 	public static readonly decimal BaseCommissionPercent = 0.0005m;
 	public static readonly string Pair = CurrencyPair.SOL_USDT;
-	public static readonly int LogStep = (int)TimeSpan.FromHours(6).TotalSeconds;
+	public static readonly int LogStep = (int)TimeSpan.FromHours(24).TotalSeconds;
+	
+	private static readonly int ChunkStep = LogStep;
 
 	private readonly ILogger<StrategiesRunner> _logger;
 
@@ -27,57 +29,103 @@ public class StrategiesRunner : BackgroundService
 		_sandbox = sandbox;
 	}
 
+	private record StrategyData(TradeAccount Account, Queue<KlineItem> History, int MaxHistoryCount)
+	{
+		public TimeSpan Elapsed { get; set; } = TimeSpan.Zero;
+	};
+
 	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 	{
-		var history = new List<KlineItem>((int)(SandboxService.EndTime - SandboxService.StartTime).TotalSeconds);
-		var accounts = new Dictionary<IStrategy, TradeAccount>();
+		var strategiesData = new Dictionary<IStrategy, StrategyData>();
 
 		foreach (var strategy in _strategies)
 		{
-			accounts[strategy] =
-				new TradeAccount(strategy.InitialBalance, BaseCommissionPercent, strategy.ValidateBalance);
+			strategiesData[strategy] = new StrategyData(
+				new TradeAccount(strategy.InitialBalance, BaseCommissionPercent, strategy.ValidateBalance),
+				new Queue<KlineItem>(strategy.MaxHistoryCount),
+				strategy.MaxHistoryCount
+			);
 		}
 
-		var i = 0;
-		await foreach (var item in _sandbox.FetchKlineHistory(Pair))
+		var chunkIndex = 0;
+		await foreach (var chunk in FetchKlineHistoryChunks(Pair))
 		{
-			history.Add(item);
+			var firstItem = chunk.First();
+			var startTime = DateTime.UtcNow;
 
-			var currentPrice = item.OpenPrice;
-			var needToLog = i % LogStep == 0;
+			// _logger.LogInformation($"{firstItem.OpenTime}: ${firstItem.OpenPrice}");
 
-			if (needToLog)
+			foreach (var strategy in _strategies)
 			{
-				_logger.LogInformation($"{item.OpenTime}: ${currentPrice}");
-
-				foreach (var strategy in _strategies)
-				{
-					var account = accounts[strategy];
-
-					var currentBalance = account.CalculateTotalCurrentQuantity(currentPrice);
-					var logString = strategy.GetLogString(account, currentPrice, history, i);
-
-					_logger.LogInformation(
-						$"[{strategy.GetType().Name}] ${MoneyHelper.FormatMoney(currentBalance)} | {logString}");
-				}
+				LogStrategy(strategy, strategiesData[strategy], firstItem.OpenPrice, chunkIndex * ChunkStep);
 			}
-
+			
 			Parallel.ForEach(_strategies, strategy =>
 			{
-				var account = accounts[strategy];
+				var data = strategiesData[strategy];
+				var account = data.Account;
+				var history = data.History;
+				var maxHistoryCount = data.MaxHistoryCount;
 
-				if (strategy.AutoProcessMarket)
+				var stepIndex = chunkIndex * ChunkStep;
+				foreach (var item in chunk)
 				{
-					account.ProcessMarket(currentPrice);
-				}
+					history.Enqueue(item);
+					if (history.Count > maxHistoryCount)
+					{
+						history.Dequeue();
+					}
 
-				if (i % strategy.RunStep == 0)
-				{
-					strategy.Run(account, currentPrice, history, i);
+					var currentPrice = item.OpenPrice;
+
+					if (strategy.AutoProcessMarket)
+					{
+						account.ProcessMarket(currentPrice);
+					}
+
+					if (stepIndex % strategy.RunStep == 0)
+					{
+						strategy.Run(account, currentPrice, history, stepIndex);
+					}
+
+					stepIndex++;
 				}
+				
+				data.Elapsed = DateTime.UtcNow - startTime;
 			});
 
-			i++;
+			chunkIndex++;
+		}
+	}
+
+	private void LogStrategy(IStrategy strategy, StrategyData data, decimal currentPrice, int step)
+	{
+		var currentBalance = data.Account.CalculateTotalCurrentQuantity(currentPrice);
+		var logString = strategy.GetLogString(data.Account, currentPrice, data.History, step);
+
+		_logger.LogInformation(
+			$"[{strategy.GetType().Name}] {(int)data.Elapsed.TotalMilliseconds}ms | ${MoneyHelper.FormatMoney(currentBalance)} | {logString}");
+	}
+	
+	private async IAsyncEnumerable<IReadOnlyCollection<KlineItem>> FetchKlineHistoryChunks(string pair)
+	{
+		var cache = new List<KlineItem>(ChunkStep);
+
+		await foreach (var item in _sandbox.FetchKlineHistory(pair))
+		{
+			cache.Add(item);
+
+			if (cache.Count >= ChunkStep)
+			{
+				yield return cache;
+				
+				cache = new List<KlineItem>();
+			}
+		}
+
+		if (cache.Count > 0)
+		{
+			yield return cache;
 		}
 	}
 }

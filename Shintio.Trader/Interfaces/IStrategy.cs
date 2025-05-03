@@ -7,12 +7,13 @@ public interface IStrategy
 {
 	public virtual bool AutoProcessMarket => true;
 	public virtual int RunStep => 1;
+	public virtual int MaxHistoryCount => (int)TimeSpan.FromHours(6).TotalSeconds;
 	
 	public decimal InitialBalance { get; }
 
-	public bool ValidateBalance(TradeAccount account, decimal balanceToRemove);
-	public string GetLogString(TradeAccount account, decimal currentPrice, List<KlineItem> history, int i);
+	public bool ValidateBalance(TradeAccount account, decimal balanceToRemove, decimal currentPrice);
+	public string GetLogString(TradeAccount account, decimal currentPrice, IReadOnlyCollection<KlineItem> history, int i);
 	
-	public void Run(TradeAccount account, decimal currentPrice, List<KlineItem> history, int i);
+	public void Run(TradeAccount account, decimal currentPrice, IReadOnlyCollection<KlineItem> history, int i);
 	
 }

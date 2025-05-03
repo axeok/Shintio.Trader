@@ -4,9 +4,18 @@ namespace Shintio.Trader.Utils;
 
 public static class StrategyHelper
 {
-	public static bool ValidateBalanceLiquidation(TradeAccount account, decimal balanceToRemove)
+	public static bool ValidateBalanceLiquidation(
+		TradeAccount account,
+		decimal balanceToRemove,
+		decimal currentPrice,
+		decimal gapPercent = 0.1m
+	)
 	{
-		return account.Balance - balanceToRemove > account.Orders.Sum(order => order.TotalQuantity);
+		var ordersBalance = account.Orders.Sum(o => o.CalculateCurrentQuantity(currentPrice));
+
+		var balance = account.Balance + ordersBalance;
+
+		return balance - (balance * gapPercent) - balanceToRemove > 0;
 	}
 
 	public static bool ValidateBalanceValue(TradeAccount account, decimal balanceToRemove, decimal value = 0)

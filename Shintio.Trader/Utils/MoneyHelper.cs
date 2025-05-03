@@ -9,6 +9,6 @@ public static class MoneyHelper
 
 	public static string FormatMoney(decimal value, string format = "00000")
 	{
-		return value.ToString(format);
+		return value.ToString("F0");
 	}
 }

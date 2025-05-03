@@ -58,13 +58,14 @@ appBuilder.Services.AddSingleton<BinanceService>();
 appBuilder.Services.AddSingleton<SandboxService>();
 
 // appBuilder.Services.AddSingleton<IStrategy, TestStrategy>();
-appBuilder.Services.AddSingleton<IStrategy, GlebStrategy>();
+// appBuilder.Services.AddSingleton<IStrategy, GlebStrategy>();
+// appBuilder.Services.AddSingleton<IStrategy, SkisStrategy>();
 
 // appBuilder.Services.AddSingleton<TelegramUserBotService>();
 // appBuilder.Services.AddHostedService(sp => sp.GetRequiredService<TelegramUserBotService>());
 //
 // appBuilder.Services.AddHostedService<AppService>();
-appBuilder.Services.AddHostedService<StrategiesRunner>();
+appBuilder.Services.AddHostedService<StrategiesBenchmark>();
 
 #endregion
 
