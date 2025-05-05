@@ -23,7 +23,7 @@ var appBuilder = WebApplication.CreateBuilder();
 appBuilder.Services.Configure<TelegramSecrets>(appBuilder.Configuration.GetSection("Telegram"));
 appBuilder.Services.Configure<BinanceSecrets>(appBuilder.Configuration.GetSection("Binance"));
 
-appBuilder.Services.AddControllers();
+// appBuilder.Services.AddControllers();
 
 appBuilder.Services
 	.AddPooledDbContextFactory<AppDbContext>((serviceProvider, builder) =>
@@ -73,13 +73,13 @@ appBuilder.Services.AddHostedService<StrategiesBenchmark>();
 
 var app = appBuilder.Build();
 
-app.UseHttpsRedirection();
-// app.UseStaticFiles();
-app.UseRouting();
-app.UseAuthorization();
-app.MapControllers();
-
-app.MapGet("/", () => Results.Ok(new { status = "ok", timestamp = DateTimeOffset.UtcNow }));
+// app.UseHttpsRedirection();
+// // app.UseStaticFiles();
+// app.UseRouting();
+// app.UseAuthorization();
+// app.MapControllers();
+//
+// app.MapGet("/", () => Results.Ok(new { status = "ok", timestamp = DateTimeOffset.UtcNow }));
 
 // await using (var context = app.Services.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext())
 // {
