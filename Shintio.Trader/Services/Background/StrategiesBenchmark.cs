@@ -15,22 +15,22 @@ public class StrategiesBenchmark : BackgroundService
 
 	public static readonly string[] Pairs =
 	[
-		CurrencyPair.SOL_USDT,
+		// CurrencyPair.SOL_USDT,
 		CurrencyPair.ETH_USDT,
-		CurrencyPair.BTC_USDT,
-		CurrencyPair.XRP_USDT,
-		CurrencyPair.DOGE_USDT,
-		CurrencyPair.LISTA_USDT,
-		CurrencyPair.OM_USDT,
-		CurrencyPair.BNB_USDT,
-		CurrencyPair.ADA_USDT,
-		CurrencyPair.AVAX_USDT,
-		CurrencyPair.TRX_USDT,
-		CurrencyPair.LTC_USDT,
-		CurrencyPair.LINK_USDT,
-		CurrencyPair.NEAR_USDT,
-		CurrencyPair.BCH_USDT,
-		CurrencyPair.FIL_USDT,
+		// CurrencyPair.BTC_USDT,
+		// CurrencyPair.XRP_USDT,
+		// CurrencyPair.DOGE_USDT,
+		// CurrencyPair.LISTA_USDT,
+		// CurrencyPair.OM_USDT,
+		// CurrencyPair.BNB_USDT,
+		// CurrencyPair.ADA_USDT,
+		// CurrencyPair.AVAX_USDT,
+		// CurrencyPair.TRX_USDT,
+		// CurrencyPair.LTC_USDT,
+		// CurrencyPair.LINK_USDT,
+		// CurrencyPair.NEAR_USDT,
+		// CurrencyPair.BCH_USDT,
+		// CurrencyPair.FIL_USDT,
 	];
 	public static readonly int SaveStep = (int)TimeSpan.FromHours(24).TotalSeconds;
 
@@ -38,7 +38,7 @@ public class StrategiesBenchmark : BackgroundService
 
 	private readonly ILogger<StrategiesBenchmark> _logger;
 
-	private readonly Dictionary<string,Dictionary<string, IStrategy>> _strategies;
+	private readonly Dictionary<string, Dictionary<string, IStrategy>> _strategies;
 	private readonly SandboxService _sandbox;
 
 	public StrategiesBenchmark(ILogger<StrategiesBenchmark> logger, SandboxService sandbox)
@@ -57,8 +57,8 @@ public class StrategiesBenchmark : BackgroundService
 				// foreach (var leverage in new[] { 10 })
 					foreach (var leverage in new[] { 10 })
 				{
-					foreach (var maxDelta in new[] { 0.0295m })
-						// foreach (var maxDelta in new[] { 0.015m, 0.01m, 0.02m, 0.03m })
+					// foreach (var maxDelta in new[] { 0.0295m })
+						foreach (var maxDelta in new[] { 0.015m, 0.01m, 0.02m, 0.0295m, 0.03m, 0.04m })
 					{
 						// foreach (var minDelta in new[] { 0.05m })
 							// foreach (var maxDelta in new[] { 0.015m, 0.01m, 0.02m, 0.03m })
@@ -104,7 +104,7 @@ public class StrategiesBenchmark : BackgroundService
 		{
 			foreach (var strategy in strategies.Values)
 			{
-				results[strategy] = new List<decimal> { strategy.InitialBalance };
+				results[strategy] = new List<decimal> { };
 				strategiesData[strategy] = new StrategyData(
 					new TradeAccount(strategy.InitialBalance, BaseCommissionPercent, strategy.ValidateBalance),
 					new Queue<KlineItem>(strategy.MaxHistoryCount),
@@ -113,10 +113,10 @@ public class StrategiesBenchmark : BackgroundService
 			}
 		}
 
-		var prices = new Dictionary<string, List<decimal>>();
+		var prices = new Dictionary<string, List<decimal[]>>();
 		foreach (var pair in Pairs)
 		{
-			prices[pair] = new List<decimal>();
+			prices[pair] = new List<decimal[]>();
 			
 			var totalChunks = ((int)(SandboxService.EndTime - SandboxService.StartTime).TotalSeconds) / ChunkStep;
 			var chunkIndex = 0;
@@ -168,7 +168,12 @@ public class StrategiesBenchmark : BackgroundService
 					);
 				}
 
-				prices[pair].Add(chunk.Last().OpenPrice);
+				var open = chunk.First().OpenPrice;
+				var high = chunk.Max(i => i.HighPrice);
+				var low = chunk.Min(i => i.LowPrice);
+				var close = chunk.Last().ClosePrice;
+
+				prices[pair].Add([open, high, low, close]);
 				chunkIndex++;
 
 				if (chunkIndex % 10 == 0)

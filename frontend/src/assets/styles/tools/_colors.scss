@@ -1,0 +1,166 @@
+﻿@use "sass:math";
+@use "../variables" as v;
+@use "./_gradients" as *;
+
+$highlight-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 100%);
+$opacity-gradient-direction: 90deg;
+
+$opacityStep: 1; // округлений нет, следите за остатком от деления 100 на эту переменную
+
+@each $name in $gradients {
+	$var-name: --v-theme-#{$name};
+	$color: rgb(var($var-name));
+	$gradient: rgb(var(#{$var-name})) 0, rgb(var(#{$var-name}-gradient)) 100%;
+	$gradient-center: rgba(var(#{$var-name}), 0.4) 0%, rgba(var(#{$var-name}-gradient), 0.4) 50%, rgba(var(#{$var-name}), 0.4) 100%;
+	
+	.bg-#{$name} {
+		&:not(svg, path) {
+			background: rgb(var($var-name)) !important;
+
+			@for $opacity from 1 to math.div(100, $opacityStep) {
+				&.bg-opacity-#{$opacity} {
+					background: rgba(var($var-name), math.div($opacity, math.div(100, $opacityStep))) !important;
+				}
+			}
+
+			&.bg-gradient {
+				background: linear-gradient(var(--v-theme-gradient-direction), $gradient) !important;
+
+				@for $opacity from 1 to math.div(100, $opacityStep) {
+					&.bg-opacity-#{$opacity} {
+						background: linear-gradient(var(--v-theme-gradient-direction), rgba(var(#{$var-name}), math.div($opacity, math.div(100, $opacityStep))) 0, rgba(var(#{$var-name}-gradient), math.div($opacity, math.div(100, $opacityStep))) 100%) !important;
+					}
+				}
+		
+				&-center {
+					background: linear-gradient(90deg, $gradient-center), rgb(var(#{$var-name})) !important;
+				}
+			}
+
+			&.bg-highlighted {
+				background: $highlight-gradient, $color !important;
+
+				@for $opacity from 1 to math.div(100, $opacityStep) {
+					&.bg-opacity-#{$opacity} {
+						background: $highlight-gradient, rgba(var(#{$var-name}), math.div($opacity, math.div(100, $opacityStep))) !important;
+					}
+				}
+
+				&.bg-gradient {
+					background: $highlight-gradient, linear-gradient(var(--v-theme-gradient-direction), $gradient) !important;
+
+					@for $opacity from 1 to math.div(100, $opacityStep) {
+						&.bg-opacity-#{$opacity} {
+							background: $highlight-gradient, linear-gradient(var(--v-theme-gradient-direction), rgba(var(#{$var-name}), math.div($opacity, math.div(100, $opacityStep))) 0, rgba(var(#{$var-name}-gradient), math.div($opacity, math.div(100, $opacityStep))) 100%) !important;
+						}
+					}
+				}
+			}
+
+			&.bg-glow {
+				box-shadow: 0 4px 24px rgba(var($var-name), 0.6) !important;
+
+				&-high{
+					box-shadow: 0 0px 4px rgb(var($var-name)) !important;
+				}
+
+				&-hover:hover {
+					box-shadow: 0 4px 24px rgba(var($var-name), 0.6) !important;
+
+					&-high{
+						box-shadow: 0 0px 4px rgb(var($var-name)) !important;
+					}
+				}
+			}
+		}
+
+		&-hover:hover {
+			background: rgb(var($var-name)) !important;
+
+			@for $opacity from 1 to math.div(100, $opacityStep) {
+				&.bg-opacity-#{$opacity} {
+					background: rgba(var($var-name), math.div($opacity, math.div(100, $opacityStep))) !important;
+				}
+			}
+		}
+
+		&:is(path) {
+			fill: rgb(var($var-name)) !important;
+		}
+
+		&:is(svg) {
+			background: transparent !important;
+
+			&.bg-glow {
+				filter: drop-shadow(0 4px 24px rgba(var($var-name), 0.6)) !important;
+
+				&-hover:hover {
+					filter: drop-shadow(0 4px 24px rgba(var($var-name), 0.6)) !important;
+				}
+			}
+		}
+	}
+
+	.bg-on-#{$name} {
+		background: rgb(var(--v-theme-on-#{$name})) !important;
+
+		@for $opacity from 1 to math.div(100, $opacityStep) {
+			&.bg-opacity-#{$opacity} {
+				background: rgba(var(--v-theme-on-#{$name}), math.div($opacity, math.div(100, $opacityStep))) !important;
+			}
+		}
+	}
+
+	.text-#{$name}-gradient {
+		background: linear-gradient(var(--v-theme-gradient-direction), $gradient);
+		background-clip: text;
+		-webkit-text-fill-color: transparent;
+		caret-color: $color;
+
+		&::selection {
+			color: rgb(var(--v-theme-on-primary));
+			background: rgb(var(--v-theme-primary));
+			background-clip: initial;
+			-webkit-text-fill-color: initial;
+		}
+	}
+
+	.text-#{$name} {
+		&.text-glow {
+			text-shadow: 0 0 15px $color;
+		}
+	}
+
+	.text-glow {
+		text-shadow: 0 0 15px #FFFFFF;
+	}
+
+	.i-#{$name} {
+		color: $color !important;
+
+		&.i-glow {
+			filter: drop-shadow(0 4px 8px rgba(var($var-name), 0.4)) !important;
+		}
+	}
+
+	.glow-#{$name} {
+		box-shadow: 0 4px 24px rgba(var($var-name), 0.6) !important;
+
+		&-high{
+			box-shadow: 0 0px 4px rgb(var($var-name)) !important;
+		}
+
+		&-hover:hover {
+			box-shadow: 0 4px 24px rgba(var($var-name), 0.6) !important;
+
+			&-high{
+				box-shadow: 0 0px 4px rgb(var($var-name)) !important;
+			}
+		}
+	}
+}
+
+::selection {
+	color: rgb(var(--v-theme-on-primary));
+	background: rgb(var(--v-theme-primary));
+}

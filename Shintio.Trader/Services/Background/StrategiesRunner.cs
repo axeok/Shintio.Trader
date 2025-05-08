@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Shintio.Trader.Enums;
 using Shintio.Trader.Interfaces;
 using Shintio.Trader.Models;
+using Shintio.Trader.Services.Strategies;
 using Shintio.Trader.Tables;
 using Shintio.Trader.Utils;
 
@@ -12,7 +13,7 @@ public class StrategiesRunner : BackgroundService
 {
 	public static readonly decimal BaseCommissionPercent = 0.0005m;
 	public static readonly string Pair = CurrencyPair.SOL_USDT;
-	public static readonly int LogStep = (int)TimeSpan.FromHours(24).TotalSeconds;
+	public static readonly int LogStep = (int)TimeSpan.FromHours(1).TotalSeconds;
 	
 	private static readonly int ChunkStep = LogStep;
 
@@ -25,7 +26,7 @@ public class StrategiesRunner : BackgroundService
 	{
 		_logger = logger;
 
-		_strategies = strategies.ToArray();
+		_strategies = [new GlebStrategy()];
 		_sandbox = sandbox;
 	}
 

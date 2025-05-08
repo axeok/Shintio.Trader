@@ -1,0 +1,104 @@
+﻿@use "sass:list";
+@use "../variables" as v;
+@use "./_gradients" as *;
+@use "./mixins" as *;
+
+@mixin pseudo-cover {
+	pointer-events: none;
+	user-select: none;
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+}
+
+.outline {
+	outline: 1px solid v.$border-color-root !important;
+}
+
+.border {
+	@each $key, $border in v.$borders {
+		$width: list.nth($border, 1);
+		$style: list.nth($border, 2);
+		$size: "";
+
+		@if $key != null {
+			$size: -#{$key};
+		}
+
+		&#{$size} {
+			&-gradient {
+				position: relative;
+
+				&::after {
+					@include pseudo-cover;
+
+					border-width: $width !important;
+					border-style: $style !important;
+					border-color: v.$border-color-root !important;
+					border-radius: inherit;
+					mask-image: linear-gradient(to top, transparent 0%, black 100%);
+					//mask-image: linear-gradient(to top right, transparent 0%, black 50%, transparent 100%);
+				}
+			}
+
+			@each $name in $gradients {
+				$var-name: --v-theme-#{$name};
+
+				&-#{$name} {
+					border-width: $width !important;
+					border-style: $style !important;
+					border-color: rgb(var(#{$var-name})) !important;
+				}
+
+				&-#{$name} {
+					&-gradient {
+						position: relative;
+
+						&::before {
+							@include pseudo-cover;
+
+							border-width: $width !important;
+							border-style: $style !important;
+							border-color: rgb(var(#{$var-name})) !important;
+							border-radius: inherit;
+							mask-image: linear-gradient(to top, transparent 0%, black 100%);
+						}
+
+						&::after {
+							@include pseudo-cover;
+
+							border-width: 2px !important;
+							border-style: solid !important;
+							border-color: rgb(var(#{$var-name}-gradient)) !important;
+							border-radius: inherit;
+							mask-image: linear-gradient(to bottom, transparent 0%, black 100%);
+						}
+					}
+					
+					&.border-glow {
+						box-shadow: inset 0 4px 24px rgba(var($var-name), 0.6),
+									0 4px 24px rgba(var($var-name), 0.6) !important;
+
+						&-high{
+							box-shadow: inset 0 0 4px rgb(var($var-name)),
+										0 0 4px rgb(var($var-name)) !important;
+						}
+
+						&-hover:hover {
+							box-shadow: inset 0 4px 24px rgba(var($var-name), 0.6),
+										0 4px 24px rgba(var($var-name), 0.6) !important;
+
+							&-high{
+								box-shadow: inset 0 0 4px rgb(var($var-name)),
+											0 0 4px rgb(var($var-name)) !important;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

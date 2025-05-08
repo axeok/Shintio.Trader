@@ -9,7 +9,7 @@ namespace Shintio.Trader.Services;
 
 public class SandboxService
 {
-	public static readonly DateTime StartTime = new(2024, 05, 1);
+	public static readonly DateTime StartTime = new(2025, 02, 1);
 	// public static readonly DateTime EndTime = new(2024, 10, 17);
 	public static readonly DateTime EndTime = new(2025, 05, 1);
 	
@@ -43,17 +43,21 @@ public class SandboxService
 			if (File.Exists(chunkFileName))
 			{
 				var data = await LoadDayItems(chunkFileName);
-			
-				foreach (var item in data)
+				if (data.Count == (int)ChunkStep.TotalSeconds)
 				{
-					yield return item;
+					foreach (var item in data)
+					{
+						yield return item;
+					}
+
+					continue;
 				}
-			
-				continue;
 			}
 
 			var items = new List<KlineItem>(ChunkStep.Seconds);
 
+			_logger.LogInformation($"[{pair}] Fetching history for {chunkStart.Date} chunk...");
+			
 			var chunkEndTicks = (chunkStart + ChunkStep).Ticks;
 			var stepTicks = FetchStep.Ticks;
 			for (var step = chunkStart.Ticks; step < chunkEndTicks; step += stepTicks)
