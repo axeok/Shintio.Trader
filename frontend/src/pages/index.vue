@@ -64,6 +64,38 @@
 		});
 	});
 
+	const shorts = $computed(() => {
+		return data.Strategies.map((strategy, i) => {
+			const index = i + 1;
+
+			return {
+				name: `SHORTS #${index} ${strategy.Name}`,
+				type: "line",
+				data: strategy.Shorts.map((value, i) => ({
+					x: i,
+					y: value,
+				})),
+				yAxisIndex: 2,
+			};
+		});
+	});
+
+	const longs = $computed(() => {
+		return data.Strategies.map((strategy, i) => {
+			const index = i + 1;
+
+			return {
+				name: `LONGS #${index} ${strategy.Name}`,
+				type: "line",
+				data: strategy.Longs.map((value, i) => ({
+					x: i,
+					y: value,
+				})),
+				yAxisIndex: 2,
+			};
+		});
+	});
+
 	const options = $ref({
 		chart: {
 			id: "vuechart-example",
@@ -100,6 +132,12 @@
 				},
 				opposite: true,
 			},
+			{
+				decimalsInFloat: 0,
+				title: {
+					text: "SHORTS/LONGS",
+				},
+			},
 		],
 
 	});
@@ -108,6 +146,8 @@
 		return [
 			...prices,
 			...strategies,
+			...shorts,
+			...longs,
 		];
 	});
 </script>

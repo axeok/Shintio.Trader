@@ -97,6 +97,8 @@ public class StrategiesBenchmark : BackgroundService
 	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 	{
 		var results = new Dictionary<IStrategy, List<decimal>>(); 
+		var shorts = new Dictionary<IStrategy, List<int>>(); 
+		var longs = new Dictionary<IStrategy, List<int>>(); 
 		
 		var strategiesData = new Dictionary<IStrategy, StrategyData>();
 
@@ -105,6 +107,8 @@ public class StrategiesBenchmark : BackgroundService
 			foreach (var strategy in strategies.Values)
 			{
 				results[strategy] = new List<decimal> { };
+				shorts[strategy] = new List<int> { };
+				longs[strategy] = new List<int> { };
 				strategiesData[strategy] = new StrategyData(
 					new TradeAccount(strategy.InitialBalance, BaseCommissionPercent, strategy.ValidateBalance),
 					new Queue<KlineItem>(strategy.MaxHistoryCount),
@@ -162,6 +166,8 @@ public class StrategiesBenchmark : BackgroundService
 							var currentBalance = account.CalculateTotalCurrentQuantity(chunk.Last().OpenPrice);
 
 							results[strategy].Add(currentBalance);
+							shorts[strategy].Add(account.Shorts.Count());
+							longs[strategy].Add(account.Longs.Count());
 
 							data.Elapsed = DateTime.UtcNow - startTime;
 						}
@@ -191,6 +197,8 @@ public class StrategiesBenchmark : BackgroundService
 								Name = p.Key,
 								Pair = pair.Key,
 								Values = results[p.Value],
+								Shorts = shorts[p.Value],
+								Longs = shorts[p.Value],
 							})),
 							Prices = prices,
 						}),
@@ -212,6 +220,8 @@ public class StrategiesBenchmark : BackgroundService
 					Name = p.Key,
 					Pair = pair.Key,
 					Values = results[p.Value],
+					Shorts = shorts[p.Value],
+					Longs = shorts[p.Value],
 				})),
 				Prices = prices,
 			}),
