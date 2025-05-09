@@ -17,6 +17,7 @@ window.Apex = {
 			show: true,
 		},
 		animations: {
+			enabled: false,
 			animateGradually: {
 				enabled: false,
 			},

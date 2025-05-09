@@ -11,26 +11,27 @@ namespace Shintio.Trader.Services.Background;
 
 public class StrategiesBenchmark : BackgroundService
 {
-	public static readonly decimal BaseCommissionPercent = 0.0005m;
+	// public static readonly decimal BaseCommissionPercent = 0;
+	public static readonly decimal BaseCommissionPercent = 0.001m;
 
 	public static readonly string[] Pairs =
 	[
-		// CurrencyPair.SOL_USDT,
+		CurrencyPair.SOL_USDT,
 		CurrencyPair.ETH_USDT,
-		// CurrencyPair.BTC_USDT,
-		// CurrencyPair.XRP_USDT,
-		// CurrencyPair.DOGE_USDT,
-		// CurrencyPair.LISTA_USDT,
-		// CurrencyPair.OM_USDT,
-		// CurrencyPair.BNB_USDT,
-		// CurrencyPair.ADA_USDT,
-		// CurrencyPair.AVAX_USDT,
-		// CurrencyPair.TRX_USDT,
-		// CurrencyPair.LTC_USDT,
-		// CurrencyPair.LINK_USDT,
-		// CurrencyPair.NEAR_USDT,
-		// CurrencyPair.BCH_USDT,
-		// CurrencyPair.FIL_USDT,
+		CurrencyPair.BTC_USDT,
+		CurrencyPair.XRP_USDT,
+		CurrencyPair.DOGE_USDT,
+		CurrencyPair.LISTA_USDT,
+		CurrencyPair.OM_USDT,
+		CurrencyPair.BNB_USDT,
+		CurrencyPair.ADA_USDT,
+		CurrencyPair.AVAX_USDT,
+		CurrencyPair.TRX_USDT,
+		CurrencyPair.LTC_USDT,
+		CurrencyPair.LINK_USDT,
+		CurrencyPair.NEAR_USDT,
+		CurrencyPair.BCH_USDT,
+		CurrencyPair.FIL_USDT,
 	];
 	public static readonly int SaveStep = (int)TimeSpan.FromHours(24).TotalSeconds;
 
@@ -47,37 +48,72 @@ public class StrategiesBenchmark : BackgroundService
 
 		_strategies = new Dictionary<string, Dictionary<string, IStrategy>>();
 
+		// var pair = CurrencyPair.XRP_USDT;
+		// foreach (var (pair, maxDelta) in new Dictionary<string, decimal>()
+		//          {
+		// 	         { CurrencyPair.ETH_USDT, 0.015m },
+		// 	         { CurrencyPair.BTC_USDT, 0.03m },
+		// 	         { CurrencyPair.DOGE_USDT, 0.03m },
+		//          })
 		foreach (var pair in Pairs)
 		{
 			_strategies[pair] = new Dictionary<string, IStrategy>();
 			
 			// foreach (var quantity in new[] { 1 })
-				foreach (var quantity in new[] { 1 })
+				foreach (var quantity in new[] { 10 })
+				// foreach (var quantity in new[] { 10 })
 			{
 				// foreach (var leverage in new[] { 10 })
 					foreach (var leverage in new[] { 10 })
-				{
-					// foreach (var maxDelta in new[] { 0.0295m })
-						foreach (var maxDelta in new[] { 0.015m, 0.01m, 0.02m, 0.0295m, 0.03m, 0.04m })
+					// foreach (var leverage in new[] { 10 })
 					{
+						// var maxDelta = 0.03m;
+					for (var maxDelta = 0.01m; maxDelta <= 0.05m; maxDelta += 0.001m)
+					// foreach (var maxDelta in new[] { 0.008m })
+						// foreach (var maxDelta in new[] { 0.01m, 0.015m, 0.02m, 0.025m, 0.03m })
+					{
+						// var minDelta = 0.0311m;
+						for (var minDelta = 0.00m; minDelta <= 0.05m; minDelta += 0.001m)
+						// var minDelta = maxDelta / 2;
 						// foreach (var minDelta in new[] { 0.05m })
-							// foreach (var maxDelta in new[] { 0.015m, 0.01m, 0.02m, 0.03m })
+							// foreach (var minDelta in new[] { 0.005m, 0.006m, 0.007m, 0.0075m, 0.008m, 0.009m, 0.01m, 0.011m, 0.012m, 0.013m, 0.014m })
 						{
-							foreach (var initialBalance in new[] { 10_000 })
+							// foreach (var initialBalance in new[] { 10_000 })
 								// foreach (var initialBalance in new[] { 500, 2_000, 10_000 })
+								foreach (var initialBalance in new[] { 10_000 })
 							{
 								// foreach (var skipSteps in new[] { 365 })
 								{
-									var name =
-										$"{pair} Q{quantity:F0}L{leverage:F0}D{maxDelta * 100:F2}D{initialBalance:F0}";
+									foreach (var quantityMultiplier in new[]
+									         {
+										         QuantityMultiplier.None, QuantityMultiplier.Low,
+										         QuantityMultiplier.LowQuad, QuantityMultiplier.High,
+										         QuantityMultiplier.HighQuad
+									         })
+									// foreach (var quantityMultiplier in new[]
+									//          {
+									// 	         QuantityMultiplier.None, QuantityMultiplier.Low,
+									// 	         QuantityMultiplier.LowQuad, QuantityMultiplier.High,
+									// 	         QuantityMultiplier.HighQuad
+									//          })
+									{
+										foreach (var runStep in new[] { 60 })
+										{
+											var name =
+												$"{pair} Q{quantity:F0}L{leverage:F0}D{maxDelta * 100:F2}D{minDelta * 100:F2}B{initialBalance:F0}Q{quantityMultiplier}R{runStep}";
 
-									_strategies[pair][name] =
-										new SkisStrategy(
-											quantity,
-											leverage,
-											maxDelta,
-											initialBalance
-										);
+											_strategies[pair][name] =
+												new SkisStrategy(
+													quantity,
+													leverage,
+													maxDelta,
+													minDelta,
+													initialBalance,
+													quantityMultiplier,
+													runStep: TimeSpan.FromMinutes(runStep)
+												);
+										}
+									}
 								}
 							}
 						}
@@ -134,42 +170,57 @@ public class StrategiesBenchmark : BackgroundService
 					Parallel.ForEach(_strategies[pair].Values, strategy =>
 							// foreach (var strategy in _strategies[pair].Values)
 						{
-							var data = strategiesData[strategy];
-							var account = data.Account;
-							var history = data.History;
-							var maxHistoryCount = data.MaxHistoryCount;
+							var flag = false;
 
-							var stepIndex = chunkIndex * ChunkStep;
-							foreach (var item in chunk)
+							do
 							{
-								history.Enqueue(item);
-								if (history.Count > maxHistoryCount)
+								try
 								{
-									history.Dequeue();
+									var data = strategiesData[strategy];
+									var account = data.Account;
+									var history = data.History;
+									var maxHistoryCount = data.MaxHistoryCount;
+
+									var stepIndex = chunkIndex * ChunkStep;
+									foreach (var item in chunk)
+									{
+										history.Enqueue(item);
+										if (history.Count > maxHistoryCount)
+										{
+											history.Dequeue();
+										}
+
+										var currentPrice = item.OpenPrice;
+
+										if (strategy.AutoProcessMarket)
+										{
+											account.ProcessMarket(currentPrice);
+										}
+
+										if (stepIndex % strategy.RunStep == 0)
+										{
+											strategy.Run(account, currentPrice, history, stepIndex);
+										}
+
+										stepIndex++;
+									}
+
+									var currentBalance =
+										account.CalculateTotalCurrentQuantity(chunk.Last().OpenPrice);
+
+									results[strategy].Add(currentBalance);
+									shorts[strategy].Add(account.Shorts.Count());
+									longs[strategy].Add(account.Longs.Count());
+
+									data.Elapsed = DateTime.UtcNow - startTime;
+
+									flag = true;
 								}
-
-								var currentPrice = item.OpenPrice;
-
-								if (strategy.AutoProcessMarket)
+								catch (Exception e)
 								{
-									account.ProcessMarket(currentPrice);
+									_logger.LogError(e, e.Message);
 								}
-
-								if (stepIndex % strategy.RunStep == 0)
-								{
-									strategy.Run(account, currentPrice, history, stepIndex);
-								}
-
-								stepIndex++;
-							}
-
-							var currentBalance = account.CalculateTotalCurrentQuantity(chunk.Last().OpenPrice);
-
-							results[strategy].Add(currentBalance);
-							shorts[strategy].Add(account.Shorts.Count());
-							longs[strategy].Add(account.Longs.Count());
-
-							data.Elapsed = DateTime.UtcNow - startTime;
+							} while (!flag);
 						}
 					);
 				}
@@ -182,29 +233,29 @@ public class StrategiesBenchmark : BackgroundService
 				prices[pair].Add([open, high, low, close]);
 				chunkIndex++;
 
-				if (chunkIndex % 10 == 0)
-				{
-					await File.WriteAllTextAsync(
-						"benchmark.json",
-						JsonSerializer.Serialize(new
-						{
-							StartTime = SandboxService.StartTime.ToString("yyyy-MM-dd"),
-							EndTime =
-								(SandboxService.StartTime + (TimeSpan.FromSeconds(ChunkStep) * chunkIndex)).ToString("yyyy-MM-dd"),
-							SaveStepSeconds = SaveStep,
-							Strategies = _strategies.SelectMany(pair => pair.Value.Select(p => new
-							{
-								Name = p.Key,
-								Pair = pair.Key,
-								Values = results[p.Value],
-								Shorts = shorts[p.Value],
-								Longs = shorts[p.Value],
-							})),
-							Prices = prices,
-						}),
-						cancellationToken: stoppingToken
-					);
-				}
+				// if (chunkIndex % 10 == 0)
+				// {
+				// 	await File.WriteAllTextAsync(
+				// 		"benchmark.json",
+				// 		JsonSerializer.Serialize(new
+				// 		{
+				// 			StartTime = SandboxService.StartTime.ToString("yyyy-MM-dd"),
+				// 			EndTime =
+				// 				(SandboxService.StartTime + (TimeSpan.FromSeconds(ChunkStep) * chunkIndex)).ToString("yyyy-MM-dd"),
+				// 			SaveStepSeconds = SaveStep,
+				// 			Strategies = _strategies.SelectMany(pair => pair.Value.Select(p => new
+				// 			{
+				// 				Name = p.Key,
+				// 				Pair = pair.Key,
+				// 				Values = results[p.Value],
+				// 				Shorts = shorts[p.Value],
+				// 				Longs = shorts[p.Value],
+				// 			})),
+				// 			Prices = prices,
+				// 		}),
+				// 		cancellationToken: stoppingToken
+				// 	);
+				// }
 			}
 		}
 

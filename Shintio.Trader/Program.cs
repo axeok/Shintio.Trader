@@ -66,6 +66,7 @@ appBuilder.Services.AddSingleton<SandboxService>();
 //
 // appBuilder.Services.AddHostedService<AppService>();
 appBuilder.Services.AddHostedService<StrategiesBenchmark>();
+// appBuilder.Services.AddHostedService<StrategiesBenchmark2>();
 // appBuilder.Services.AddHostedService<StrategiesRunner>();
 
 #endregion

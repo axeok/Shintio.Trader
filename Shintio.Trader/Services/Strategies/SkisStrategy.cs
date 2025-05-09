@@ -1,4 +1,5 @@
-﻿using Shintio.Trader.Interfaces;
+﻿using Shintio.Trader.Enums;
+using Shintio.Trader.Interfaces;
 using Shintio.Trader.Models;
 using Shintio.Trader.Tables;
 using Shintio.Trader.Utils;
@@ -10,18 +11,24 @@ public class SkisStrategy : IStrategy
 	private readonly decimal _quantity;
 	private readonly decimal _leverage;
 	private readonly decimal _maxDelta;
+	private readonly decimal _minDelta;
+	private readonly QuantityMultiplier _quantityMultiplier;
 
 	public SkisStrategy(
 		decimal quantity = 1m,
 		decimal leverage = 10m,
 		decimal maxDelta = 0.015m,
+		decimal minDelta = 0.005m,
 		decimal initialBalance = 2_000m,
+		QuantityMultiplier quantityMultiplier = QuantityMultiplier.None,
 		TimeSpan? runStep = null
 	)
 	{
 		_quantity = quantity;
 		_leverage = leverage;
 		_maxDelta = maxDelta;
+		_minDelta = minDelta;
+		_quantityMultiplier = quantityMultiplier;
 
 		InitialBalance = initialBalance;
 		RunStep = (int)(runStep ?? TimeSpan.FromSeconds(60)).TotalSeconds;
@@ -37,6 +44,7 @@ public class SkisStrategy : IStrategy
 	private decimal _lastLow = decimal.MaxValue;
 
 	private Trend _trend = Trend.Flat;
+	private int _trendSteps = 0;
 
 	public bool ValidateBalance(TradeAccount account, decimal balanceToRemove, decimal currentPrice)
 	{
@@ -62,31 +70,64 @@ public class SkisStrategy : IStrategy
 		var deltaHigh = (currentPrice - _lastHigh) / _lastHigh * -1;
 		var deltaLow = (currentPrice - _lastLow) / _lastLow;
 
+		var (longs, shorts) = account.LongsAndShorts;
+
 		if (deltaHigh >= _maxDelta && _trend != Trend.Down)
 		{
 			_lastLow = currentPrice;
-			_trend = Trend.Down;
+			_trend = Trend.Flat;
+			CloseOrders(account, longs, currentPrice);
+			_trendSteps = 0;
 		}
 
 		if (deltaLow >= _maxDelta && _trend != Trend.Up)
 		{
 			_lastHigh = currentPrice;
+			_trend = Trend.Flat;
+			CloseOrders(account, shorts, currentPrice);
+			_trendSteps = 0;
+		}
+
+		if (deltaHigh >= _minDelta && _trend == Trend.Flat)
+		{
+			_trend = Trend.Down;
+		}
+
+		if (deltaLow >= _minDelta && _trend == Trend.Flat)
+		{
 			_trend = Trend.Up;
 		}
 
-		var (longs, shorts) = account.LongsAndShorts;
+		_trendSteps++;
 
+		var quantity = _quantityMultiplier switch
+		{
+			QuantityMultiplier.None => _quantity,
+			QuantityMultiplier.Low => _quantity - (_trendSteps / 10m),
+			QuantityMultiplier.LowQuad => _quantity - ((_trendSteps / 10m) * (_trendSteps / 10m)),
+			QuantityMultiplier.High => _quantity + (_trendSteps / 10m),
+			QuantityMultiplier.HighQuad => _quantity + ((_trendSteps / 10m) * (_trendSteps / 10m)),
+		};
+		
+		var leverage = Math.Min(75, Math.Floor(_leverage + (account.Balance / 500)));
+		
 		switch (_trend)
 		{
 			case Trend.Up:
-				CloseOrders(account, shorts, currentPrice);
 				// Console.WriteLine($"Long {currentPrice}");
-				account.TryOpenLong(currentPrice, _quantity, _leverage, null, null);
+				if (quantity >= 1)
+				{
+					account.TryOpenLong(currentPrice, quantity, leverage, null, null);
+				}
+
 				break;
 			case Trend.Down:
-				CloseOrders(account, longs, currentPrice);
 				// Console.WriteLine($"Short {currentPrice}");
-				account.TryOpenShort(currentPrice, _quantity, _leverage, null, null);
+				if (quantity >= 1)
+				{
+					account.TryOpenShort(currentPrice, quantity, leverage, null, null);
+				}
+
 				break;
 			case Trend.Flat:
 				// CloseOrders(account, longs, currentPrice);

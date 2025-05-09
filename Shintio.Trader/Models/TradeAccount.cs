@@ -24,6 +24,8 @@ public class TradeAccount
 	public List<Order> Orders { get; } = new();
 	public List<Order> PendingOrders { get; } = new();
 
+	public TradeStatistics Statistics { get; } = new();
+
 	public IEnumerable<Order> Longs => Orders.Where(o => !o.IsShort);
 	public IEnumerable<Order> Shorts => Orders.Where(o => o.IsShort);
 
@@ -69,6 +71,33 @@ public class TradeAccount
 
 		Balance += quantity;
 
+		if (quantity > order.TotalQuantity)
+		{
+			if (order.IsShort)
+			{
+				Statistics.Shorts.WinsCount++;
+				Statistics.Shorts.WinsSum += quantity;
+			}
+			else
+			{
+				Statistics.Longs.WinsCount++;
+				Statistics.Longs.WinsSum += quantity;
+			}
+		}
+		else
+		{
+			if (order.IsShort)
+			{
+				Statistics.Shorts.LosesCount++;
+				Statistics.Shorts.LosesSum += quantity;
+			}
+			else
+			{
+				Statistics.Longs.LosesCount++;
+				Statistics.Longs.LosesSum += quantity;
+			}
+		}
+
 		return quantity;
 	}
 
@@ -102,6 +131,17 @@ public class TradeAccount
 	public void AddOrder(Order order)
 	{
 		Orders.Add(order);
+
+		if (order.IsShort)
+		{
+			Statistics.Shorts.TotalCount++;
+			Statistics.Shorts.TotalSum += order.TotalQuantity;
+		}
+		else
+		{
+			Statistics.Longs.TotalCount++;
+			Statistics.Longs.TotalSum += order.TotalQuantity;
+		}
 	}
 
 	#endregion

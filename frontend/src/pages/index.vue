@@ -6,6 +6,11 @@
 			:options="options"
 			:series="series"
 		/>
+		<div>
+			<div v-for="strategy in strategies">
+				{{ strategy.Name }} : {{ strategy.Values[strategy.Values.length - 1] }}
+			</div>
+		</div>
 	</div>
 </template>
 
@@ -49,7 +54,16 @@
 	});
 
 	const strategies = $computed(() => {
-		return data.Strategies.map((strategy, i) => {
+		return data.Strategies.sort((a, b) => {
+			const aLastValue = a.Values[a.Values.length - 1] || 0;
+			const bLastValue = b.Values[b.Values.length - 1] || 0;
+			return bLastValue - aLastValue;
+		}).slice(0, 40);
+
+	});
+
+	const balances = $computed(() => {
+		return strategies.map((strategy, i) => {
 			const index = i + 1;
 
 			return {
@@ -60,38 +74,6 @@
 					y: value,
 				})),
 				yAxisIndex: 1,
-			};
-		});
-	});
-
-	const shorts = $computed(() => {
-		return data.Strategies.map((strategy, i) => {
-			const index = i + 1;
-
-			return {
-				name: `SHORTS #${index} ${strategy.Name}`,
-				type: "line",
-				data: strategy.Shorts.map((value, i) => ({
-					x: i,
-					y: value,
-				})),
-				yAxisIndex: 2,
-			};
-		});
-	});
-
-	const longs = $computed(() => {
-		return data.Strategies.map((strategy, i) => {
-			const index = i + 1;
-
-			return {
-				name: `LONGS #${index} ${strategy.Name}`,
-				type: "line",
-				data: strategy.Longs.map((value, i) => ({
-					x: i,
-					y: value,
-				})),
-				yAxisIndex: 2,
 			};
 		});
 	});
@@ -126,28 +108,28 @@
 				},
 			},
 			{
-				decimalsInFloat: 0,
+				decimalsInFloat: 3,
 				title: {
 					text: "Balance",
 				},
 				opposite: true,
 			},
-			{
-				decimalsInFloat: 0,
-				title: {
-					text: "SHORTS/LONGS",
-				},
-			},
+			// {
+			// 	decimalsInFloat: 0,
+			// 	title: {
+			// 		text: "SHORTS/LONGS",
+			// 	},
+			// },
 		],
 
 	});
 
 	const series = $computed(() => {
 		return [
-			...prices,
-			...strategies,
-			...shorts,
-			...longs,
+			...(prices.length === 1 ? prices : []),
+			...balances,
+			// ...shorts,
+			// ...longs,
 		];
 	});
 </script>
