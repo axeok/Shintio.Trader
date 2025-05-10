@@ -10,6 +10,7 @@ public class TradeAccount
 	{
 		InitialBalance = initialBalance;
 		Balance = initialBalance;
+		MaxBalance = InitialBalance * 2;
 
 		CommissionPercent = commissionPercent;
 
@@ -19,6 +20,8 @@ public class TradeAccount
 	public decimal InitialBalance { get; }
 	public decimal CommissionPercent { get; }
 	public decimal Balance { get; set; }
+	public decimal MaxBalance { get; set; }
+	public decimal ReservedBalance { get; set; } = 0;
 	public decimal PayedCommission { get; set; } = 0;
 
 	public List<Order> Orders { get; } = new();
@@ -211,6 +214,11 @@ public class TradeAccount
 	public decimal CalculateTotalCurrentQuantity(decimal currentPrice)
 	{
 		return Balance + CalculateOrdersCurrentQuantity(currentPrice);
+	}
+
+	public decimal CalculateFullBalance(decimal currentPrice)
+	{
+		return ReservedBalance + CalculateTotalCurrentQuantity(currentPrice);
 	}
 
 	#endregion

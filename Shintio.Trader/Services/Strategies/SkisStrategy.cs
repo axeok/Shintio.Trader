@@ -64,6 +64,13 @@ public class SkisStrategy : IStrategy
 
 	public void Run(TradeAccount account, decimal currentPrice, IReadOnlyCollection<KlineItem> history, int i)
 	{
+		if (account.Balance > account.MaxBalance)
+		{
+			var reserved = account.Balance - account.MaxBalance;
+			account.Balance -= reserved;
+			account.ReservedBalance += reserved;
+		}
+		
 		_lastHigh = Math.Max(_lastHigh, currentPrice);
 		_lastLow = Math.Min(_lastLow, currentPrice);
 
@@ -110,6 +117,7 @@ public class SkisStrategy : IStrategy
 		};
 		
 		var leverage = Math.Min(75, Math.Floor(_leverage + (account.Balance / 500)));
+		// var leverage = Math.Min(75, Math.Floor(_leverage + (account.Balance / 500)));
 		
 		switch (_trend)
 		{

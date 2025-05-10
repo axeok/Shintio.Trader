@@ -9,7 +9,7 @@ namespace Shintio.Trader.Services;
 
 public class SandboxService
 {
-	public static readonly DateTime StartTime = new(2025, 02, 1);
+	public static readonly DateTime StartTime = new(2024, 05, 17);
 	// public static readonly DateTime EndTime = new(2024, 10, 17);
 	public static readonly DateTime EndTime = new(2025, 05, 1);
 	

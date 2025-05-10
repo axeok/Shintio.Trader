@@ -1,4 +1,6 @@
-﻿using Binance.Net.Clients;
+﻿using System.Text.Json;
+using System.Text.Json.Nodes;
+using Binance.Net.Clients;
 using Binance.Net.Interfaces.Clients;
 using CryptoExchange.Net.Authentication;
 using Microsoft.AspNetCore.Builder;
@@ -56,6 +58,21 @@ appBuilder.Services.AddSingleton<IBinanceRestClient>(p =>
 
 appBuilder.Services.AddSingleton<BinanceService>();
 appBuilder.Services.AddSingleton<SandboxService>();
+
+// var json = JsonObject.Parse(File.ReadAllText("benchmark.json"));
+//
+// var strategies = json["Strategies"].AsArray();
+//
+// var ordered = strategies.OrderByDescending(s => s["Values"].AsArray().Last().GetValue<decimal>())
+// 	.Take(1000);
+//
+// json["Strategies"] = JsonSerializer.SerializeToNode(ordered);
+//
+// Console.WriteLine(json["Strategies"].AsArray().Count);
+//
+// File.WriteAllText("benchmark-clipped.json", json.ToString());
+//
+// return;
 
 // appBuilder.Services.AddSingleton<IStrategy, TestStrategy>();
 // appBuilder.Services.AddSingleton<IStrategy, GlebStrategy>();

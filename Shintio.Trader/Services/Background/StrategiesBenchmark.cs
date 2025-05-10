@@ -16,22 +16,22 @@ public class StrategiesBenchmark : BackgroundService
 
 	public static readonly string[] Pairs =
 	[
-		CurrencyPair.SOL_USDT,
-		CurrencyPair.ETH_USDT,
+		// CurrencyPair.SOL_USDT,
+		// CurrencyPair.ETH_USDT,
 		CurrencyPair.BTC_USDT,
-		CurrencyPair.XRP_USDT,
-		CurrencyPair.DOGE_USDT,
-		CurrencyPair.LISTA_USDT,
-		CurrencyPair.OM_USDT,
-		CurrencyPair.BNB_USDT,
-		CurrencyPair.ADA_USDT,
-		CurrencyPair.AVAX_USDT,
-		CurrencyPair.TRX_USDT,
-		CurrencyPair.LTC_USDT,
-		CurrencyPair.LINK_USDT,
-		CurrencyPair.NEAR_USDT,
-		CurrencyPair.BCH_USDT,
-		CurrencyPair.FIL_USDT,
+		// CurrencyPair.XRP_USDT,
+		// CurrencyPair.DOGE_USDT,
+		// CurrencyPair.LISTA_USDT,
+		// CurrencyPair.OM_USDT,
+		// CurrencyPair.BNB_USDT,
+		// CurrencyPair.ADA_USDT,
+		// CurrencyPair.AVAX_USDT,
+		// CurrencyPair.TRX_USDT,
+		// CurrencyPair.LTC_USDT,
+		// CurrencyPair.LINK_USDT,
+		// CurrencyPair.NEAR_USDT,
+		// CurrencyPair.BCH_USDT,
+		// CurrencyPair.FIL_USDT,
 	];
 	public static readonly int SaveStep = (int)TimeSpan.FromHours(24).TotalSeconds;
 
@@ -67,13 +67,13 @@ public class StrategiesBenchmark : BackgroundService
 					foreach (var leverage in new[] { 10 })
 					// foreach (var leverage in new[] { 10 })
 					{
-						// var maxDelta = 0.03m;
-					for (var maxDelta = 0.01m; maxDelta <= 0.05m; maxDelta += 0.001m)
+						var maxDelta = 0.048m;
+					// for (var maxDelta = 0.01m; maxDelta <= 0.05m; maxDelta += 0.001m)
 					// foreach (var maxDelta in new[] { 0.008m })
 						// foreach (var maxDelta in new[] { 0.01m, 0.015m, 0.02m, 0.025m, 0.03m })
 					{
-						// var minDelta = 0.0311m;
-						for (var minDelta = 0.00m; minDelta <= 0.05m; minDelta += 0.001m)
+						var minDelta = 0.034m;
+						// for (var minDelta = 0.00m; minDelta <= 0.05m; minDelta += 0.001m)
 						// var minDelta = maxDelta / 2;
 						// foreach (var minDelta in new[] { 0.05m })
 							// foreach (var minDelta in new[] { 0.005m, 0.006m, 0.007m, 0.0075m, 0.008m, 0.009m, 0.01m, 0.011m, 0.012m, 0.013m, 0.014m })
@@ -86,8 +86,8 @@ public class StrategiesBenchmark : BackgroundService
 								{
 									foreach (var quantityMultiplier in new[]
 									         {
-										         QuantityMultiplier.None, QuantityMultiplier.Low,
-										         QuantityMultiplier.LowQuad, QuantityMultiplier.High,
+										         // QuantityMultiplier.None, QuantityMultiplier.Low,
+										         // QuantityMultiplier.LowQuad, QuantityMultiplier.High,
 										         QuantityMultiplier.HighQuad
 									         })
 									// foreach (var quantityMultiplier in new[]
@@ -205,8 +205,8 @@ public class StrategiesBenchmark : BackgroundService
 										stepIndex++;
 									}
 
-									var currentBalance =
-										account.CalculateTotalCurrentQuantity(chunk.Last().OpenPrice);
+									var currentBalance = account.CalculateFullBalance(chunk.Last().OpenPrice);
+									// var currentBalance = account.ReservedBalance;
 
 									results[strategy].Add(currentBalance);
 									shorts[strategy].Add(account.Shorts.Count());
