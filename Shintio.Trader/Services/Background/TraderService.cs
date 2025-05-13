@@ -132,26 +132,42 @@ public class TraderService : BackgroundService
 		await BotLog(report.ToString());
 
 		SaveData(newData);
+		
+		var reports = new List<string>();
 
 		if (closeLongs)
 		{
-			
+			reports.Add(await BinanceHelper.CloseAllLongs(_binanceClient, Pair));
 		}
 
 		if (closeShorts)
 		{
-			
+			reports.Add(await BinanceHelper.CloseAllShorts(_binanceClient, Pair));
 		}
 		
 		var exchangeInfo = await _binanceClient.UsdFuturesApi.ExchangeData.GetExchangeInfoAsync();
 		var symbolInfo = exchangeInfo.Data.Symbols.First(s => s.Name == Pair);
 		var quantityPrecision = symbolInfo.QuantityPrecision;
 
-		var reports = new List<string>();
 		foreach (var order in orders)
 		{
 			reports.Add(await BinanceHelper.TryPlaceOrder(_binanceClient, Pair, currentPrice, quantityPrecision, order));
 		}
+
+		foreach (var message in reports)
+		{
+			await BotLog(message);
+		}
+
+		await LogBalance();
+	}
+
+	private async Task SellAll()
+	{
+		var reports = new List<string>();
+
+		reports.Add(await BinanceHelper.CloseAllLongs(_binanceClient, Pair));
+		reports.Add(await BinanceHelper.CloseAllShorts(_binanceClient, Pair));
 
 		foreach (var message in reports)
 		{
@@ -227,6 +243,9 @@ public class TraderService : BackgroundService
 				break;
 			case "/run":
 				await RunStrategy();
+				break;
+			case "/sell":
+				await SellAll();
 				break;
 		}
 	}
