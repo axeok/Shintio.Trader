@@ -107,6 +107,8 @@ public static class BinanceHelper
 		}
 
 		var totalQuantity = Math.Abs(shortPositions.Sum(p => p.Quantity));
+		var totalProfit = shortPositions.Sum(p => p.UnrealizedPnl);
+
 		var orderResult = await binanceClient.UsdFuturesApi.Trading.PlaceOrderAsync(
 			pair,
 			OrderSide.Buy,
@@ -116,7 +118,7 @@ public static class BinanceHelper
 		);
 
 		return orderResult.Success
-			? $"Закрыл шорты на сумму {totalQuantity:F4}"
+			? $"Закрыл шорты на сумму {totalQuantity:F4}. Профит: {totalProfit:F2} USDT"
 			: $"Ошибка закрытия шортов: {orderResult.Error}";
 	}
 
@@ -141,6 +143,7 @@ public static class BinanceHelper
 		}
 
 		var totalQuantity = Math.Abs(longPositions.Sum(p => p.Quantity));
+		var totalProfit = longPositions.Sum(p => p.UnrealizedPnl);
 		var orderResult = await binanceClient.UsdFuturesApi.Trading.PlaceOrderAsync(
 			pair,
 			OrderSide.Sell,
@@ -150,7 +153,7 @@ public static class BinanceHelper
 		);
 
 		return orderResult.Success
-			? $"Закрыл лонгов на сумму {totalQuantity:F4}"
+			? $"Закрыл лонгов на сумму {totalQuantity:F4}. Профит: {totalProfit:F2} USDT"
 			: $"Ошибка закрытия лонг позиций: {orderResult.Error}";
 	}
 }
