@@ -52,7 +52,7 @@ public class TraderService : BackgroundService
 		_traderConfig = traderConfig.Value;
 		
 		var now = DateTime.UtcNow;
-		var nextHour = now.AddHours(0);
+		var nextHour = now.AddHours(1);
 		var nextAligned = new DateTime(nextHour.Year, nextHour.Month, nextHour.Day, nextHour.Hour, 15, 0);
 
 		var delay = nextAligned - now;
