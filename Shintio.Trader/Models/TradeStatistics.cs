@@ -5,10 +5,10 @@ public class TradeStatistics
 	public Statistics Shorts = new();
 	public Statistics Longs = new();
 
-	public decimal WinrateCount => (decimal)(Shorts.WinsCount + Longs.LosesCount) /
+	public decimal WinrateCount => (decimal)(Shorts.WinsCount + Longs.WinsCount) /
 	                               (Shorts.WinsCount + Shorts.LosesCount + Longs.WinsCount + Longs.LosesCount);
 	
-	public decimal WinrateSum => (Shorts.WinsSum + Longs.LosesSum) /
+	public decimal WinrateSum => (Shorts.WinsSum + Longs.WinsSum) /
 	                          (Shorts.WinsSum + Shorts.LosesSum + Longs.WinsSum + Longs.LosesSum);
 
 	public class Statistics

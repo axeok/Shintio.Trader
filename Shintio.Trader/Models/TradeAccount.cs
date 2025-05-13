@@ -21,10 +21,10 @@ public class TradeAccount
 	public decimal CommissionPercent { get; }
 	public decimal Balance { get; set; }
 	public decimal MaxBalance { get; set; }
-	public decimal ReservedBalance { get; set; } = 0;
+	// public decimal ReservedBalance { get; set; } = 0;
 	public decimal PayedCommission { get; set; } = 0;
 
-	public List<Order> Orders { get; } = new();
+	public List<Order> Orders { get; set; } = new();
 	public List<Order> PendingOrders { get; } = new();
 
 	public TradeStatistics Statistics { get; } = new();
@@ -216,10 +216,10 @@ public class TradeAccount
 		return Balance + CalculateOrdersCurrentQuantity(currentPrice);
 	}
 
-	public decimal CalculateFullBalance(decimal currentPrice)
-	{
-		return ReservedBalance + CalculateTotalCurrentQuantity(currentPrice);
-	}
+	// public decimal CalculateFullBalance(decimal currentPrice)
+	// {
+	// 	return ReservedBalance + CalculateTotalCurrentQuantity(currentPrice);
+	// }
 
 	#endregion
 }

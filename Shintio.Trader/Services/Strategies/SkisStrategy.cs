@@ -10,28 +10,35 @@ public class SkisStrategy : IStrategy
 {
 	private readonly decimal _quantity;
 	private readonly decimal _leverage;
-	private readonly decimal _maxDelta;
-	private readonly decimal _minDelta;
+	public readonly decimal _trendStartDelta;
+	public readonly decimal _trendEndDelta;
 	private readonly QuantityMultiplier _quantityMultiplier;
 
 	public SkisStrategy(
 		decimal quantity = 1m,
 		decimal leverage = 10m,
-		decimal maxDelta = 0.015m,
-		decimal minDelta = 0.005m,
-		decimal initialBalance = 2_000m,
-		QuantityMultiplier quantityMultiplier = QuantityMultiplier.None,
-		TimeSpan? runStep = null
+		decimal trendStartDelta = 0.005m,
+		decimal trendEndDelta = 0.015m,
+		QuantityMultiplier quantityMultiplier = QuantityMultiplier.HighQuad,
+		TimeSpan? runStep = null,
+		Trend trend = Trend.Flat,
+		int trendSteps = 0,
+		decimal lastHigh = 0,
+		decimal lastLow = decimal.MaxValue
 	)
 	{
 		_quantity = quantity;
 		_leverage = leverage;
-		_maxDelta = maxDelta;
-		_minDelta = minDelta;
+		_trendStartDelta = trendStartDelta;
+		_trendEndDelta = trendEndDelta;
 		_quantityMultiplier = quantityMultiplier;
+		
+		_trend = trend;
+		_trendSteps = trendSteps;
+		_lastHigh = lastHigh;
+		_lastLow = lastLow;
 
-		InitialBalance = initialBalance;
-		RunStep = (int)(runStep ?? TimeSpan.FromSeconds(60)).TotalSeconds;
+		RunStep = (int)(runStep ?? TimeSpan.FromHours(1)).TotalSeconds;
 	}
 
 	public bool AutoProcessMarket => false;
@@ -40,11 +47,11 @@ public class SkisStrategy : IStrategy
 	public int RunStep { get; }
 	public decimal InitialBalance { get; }
 
-	private decimal _lastHigh = 0m;
-	private decimal _lastLow = decimal.MaxValue;
+	public decimal _lastHigh;
+	public decimal _lastLow;
 
-	private Trend _trend = Trend.Flat;
-	private int _trendSteps = 0;
+	public Trend _trend;
+	public int _trendSteps = 0;
 
 	public bool ValidateBalance(TradeAccount account, decimal balanceToRemove, decimal currentPrice)
 	{
@@ -64,12 +71,12 @@ public class SkisStrategy : IStrategy
 
 	public void Run(TradeAccount account, decimal currentPrice, IReadOnlyCollection<KlineItem> history, int i)
 	{
-		if (account.Balance > account.MaxBalance)
-		{
-			var reserved = account.Balance - account.MaxBalance;
-			account.Balance -= reserved;
-			account.ReservedBalance += reserved;
-		}
+		// if (account.Balance > account.MaxBalance)
+		// {
+		// 	var reserved = account.Balance - account.MaxBalance;
+		// 	account.Balance -= reserved;
+		// 	account.ReservedBalance += reserved;
+		// }
 		
 		_lastHigh = Math.Max(_lastHigh, currentPrice);
 		_lastLow = Math.Min(_lastLow, currentPrice);
@@ -79,32 +86,43 @@ public class SkisStrategy : IStrategy
 
 		var (longs, shorts) = account.LongsAndShorts;
 
-		if (deltaHigh >= _maxDelta && _trend != Trend.Down)
+		switch (_trend)
 		{
-			_lastLow = currentPrice;
-			_trend = Trend.Flat;
-			CloseOrders(account, longs, currentPrice);
-			_trendSteps = 0;
+			case Trend.Up:
+				if (deltaHigh >= _trendEndDelta)
+				{
+					_lastLow = currentPrice;
+					_trend = Trend.Flat;
+					CloseOrders(account, longs, currentPrice);
+					_trendSteps = 0;
+				}
+
+				break;
+			case Trend.Down:
+				if (deltaLow >= _trendEndDelta)
+				{
+					_lastHigh = currentPrice;
+					_trend = Trend.Flat;
+					CloseOrders(account, shorts, currentPrice);
+					_trendSteps = 0;
+				}
+
+				break;
 		}
 
-		if (deltaLow >= _maxDelta && _trend != Trend.Up)
+		if (_trend == Trend.Flat)
 		{
-			_lastHigh = currentPrice;
-			_trend = Trend.Flat;
-			CloseOrders(account, shorts, currentPrice);
-			_trendSteps = 0;
-		}
+			if (deltaHigh >= _trendStartDelta)
+			{
+				_trend = Trend.Down;
+			}
 
-		if (deltaHigh >= _minDelta && _trend == Trend.Flat)
-		{
-			_trend = Trend.Down;
+			if (deltaLow >= _trendStartDelta)
+			{
+				_trend = Trend.Up;
+			}
 		}
-
-		if (deltaLow >= _minDelta && _trend == Trend.Flat)
-		{
-			_trend = Trend.Up;
-		}
-
+		
 		_trendSteps++;
 
 		var quantity = _quantityMultiplier switch
@@ -116,8 +134,8 @@ public class SkisStrategy : IStrategy
 			QuantityMultiplier.HighQuad => _quantity + ((_trendSteps / 10m) * (_trendSteps / 10m)),
 		};
 		
-		var leverage = Math.Min(75, Math.Floor(_leverage + (account.Balance / 500)));
-		// var leverage = Math.Min(75, Math.Floor(_leverage + (account.Balance / 500)));
+		// var leverage = _leverage;
+		var leverage = Math.Clamp(Math.Floor(_leverage + (account.Balance / 100)), 10, 75);
 		
 		switch (_trend)
 		{
@@ -152,7 +170,7 @@ public class SkisStrategy : IStrategy
 		}
 	}
 
-	private enum Trend
+	public enum Trend
 	{
 		Up,
 		Down,

@@ -9,15 +9,14 @@ namespace Shintio.Trader.Services;
 
 public class SandboxService
 {
-	public static readonly DateTime StartTime = new(2024, 05, 17);
-	// public static readonly DateTime EndTime = new(2024, 10, 17);
-	public static readonly DateTime EndTime = new(2025, 05, 1);
-	
 	private static readonly TimeSpan FetchStep = TimeSpan.FromMinutes(15);
 	private static readonly TimeSpan ChunkStep = TimeSpan.FromDays(1); // do not change
 
 	private static readonly string BasePath = "SandboxData";
 	private static readonly string DateFormat = "yyyy\\/MM\\/dd";
+	
+	private static readonly string CachePath = Path.Combine(BasePath, "_cache");
+	private static readonly string CacheDateFormat = "yyyy.MM.dd";
 
 	private readonly ILogger<SandboxService> _logger;
 	private readonly BinanceService _binanceService;
@@ -28,13 +27,32 @@ public class SandboxService
 		_binanceService = binanceService;
 	}
 
-	public async IAsyncEnumerable<KlineItem> FetchKlineHistory(string pair)
+	public async IAsyncEnumerable<KlineItem> FetchKlineHistory(string pair, DateTime startTime, DateTime endTime)
 	{
-		var path = Path.Combine(BasePath, pair);
+		var totalSeconds = (int)(endTime - startTime).TotalSeconds;
+		var cachePath = Path.Combine(CachePath, pair,
+			$"{startTime.ToString(CacheDateFormat)}_{endTime.ToString(CacheDateFormat)}.bytes");
+		if (File.Exists(cachePath))
+		{
+			var data = await LoadDayItems(cachePath);
+			if (data.Count == totalSeconds)
+			{
+				foreach (var item in data)
+				{
+					yield return item;
+				}
+
+				yield break;
+			}
+		}
 		
-		var endTicks = EndTime.Ticks;
+		var path = Path.Combine(BasePath, pair);
+
+		var allItems = new List<KlineItem>(totalSeconds);
+		
+		var endTicks = endTime.Ticks;
 		var chunkTicks = ChunkStep.Ticks;
-		for (var chunk = StartTime.Ticks; chunk < endTicks; chunk += chunkTicks)
+		for (var chunk = startTime.Ticks; chunk < endTicks; chunk += chunkTicks)
 		{
 			var chunkStart = new DateTime(chunk);
 			var chunkFileName = Path.Combine(path, $"{chunkStart.ToString(DateFormat)}.bytes");
@@ -49,6 +67,8 @@ public class SandboxService
 					{
 						yield return item;
 					}
+			
+					allItems.AddRange(data);
 
 					continue;
 				}
@@ -82,7 +102,17 @@ public class SandboxService
 
 			_logger.LogInformation($"[{pair}] Saving {items.Count} items for {chunkStart.Date} chunk...");
 			await SaveDayItems(chunkFileName, items);
+			
+			allItems.AddRange(items);
 		}
+		
+		// _logger.LogInformation($"[{pair}] Saving cache for {startTime} - {endTime}...");
+		//
+		// var builder = new DatabaseBuilder();
+		// builder.Append(allItems);
+		//
+		// Directory.CreateDirectory(Path.GetDirectoryName(cachePath)!);
+		// await File.WriteAllBytesAsync(cachePath, builder.Build());
 	}
 	
 	private async Task<IReadOnlyCollection<KlineItem>> LoadDayItems(string fileName)

@@ -59,7 +59,6 @@
 			const bLastValue = b.Values[b.Values.length - 1] || 0;
 			return bLastValue - aLastValue;
 		}).slice(0, 40);
-
 	});
 
 	const balances = $computed(() => {

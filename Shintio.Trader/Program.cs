@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Shintio.Trader.Configuration;
@@ -17,13 +18,16 @@ using Shintio.Trader.Interfaces;
 using Shintio.Trader.Services;
 using Shintio.Trader.Services.Background;
 using Shintio.Trader.Services.Strategies;
+using Telegram.Bot;
 
 #region Builder
 
-var appBuilder = WebApplication.CreateBuilder();
+// var appBuilder = WebApplication.CreateBuilder();
+var appBuilder = Host.CreateApplicationBuilder();
 
 appBuilder.Services.Configure<TelegramSecrets>(appBuilder.Configuration.GetSection("Telegram"));
 appBuilder.Services.Configure<BinanceSecrets>(appBuilder.Configuration.GetSection("Binance"));
+appBuilder.Services.Configure<TraderConfig>(appBuilder.Configuration.GetSection("Trader"));
 
 // appBuilder.Services.AddControllers();
 
@@ -45,15 +49,22 @@ appBuilder.Services.AddMessagePipe();
 
 appBuilder.Services.AddSingleton<IBinanceRestClient>(p =>
 {
-	var binanceSecrets = p.GetRequiredService<IOptions<BinanceSecrets>>();
+	var secrets = p.GetRequiredService<IOptions<BinanceSecrets>>();
 
 	return new BinanceRestClient(options =>
 	{
 		options.ApiCredentials = new ApiCredentials(
-			binanceSecrets.Value.ApiKey,
-			binanceSecrets.Value.SecretKey
+			secrets.Value.ApiKey,
+			secrets.Value.SecretKey
 		);
 	});
+});
+
+appBuilder.Services.AddSingleton<ITelegramBotClient>(p =>
+{
+	var secrets = p.GetRequiredService<IOptions<TelegramSecrets>>().Value;
+
+	return new TelegramBotClient(secrets.AccessToken);
 });
 
 appBuilder.Services.AddSingleton<BinanceService>();
@@ -82,9 +93,13 @@ appBuilder.Services.AddSingleton<SandboxService>();
 // appBuilder.Services.AddHostedService(sp => sp.GetRequiredService<TelegramUserBotService>());
 //
 // appBuilder.Services.AddHostedService<AppService>();
-appBuilder.Services.AddHostedService<StrategiesBenchmark>();
+// appBuilder.Services.AddHostedService<StrategiesBenchmark>();
 // appBuilder.Services.AddHostedService<StrategiesBenchmark2>();
+// appBuilder.Services.AddHostedService<StrategiesBenchmark3>();
+// appBuilder.Services.AddHostedService<StrategiesBenchmark4>();
 // appBuilder.Services.AddHostedService<StrategiesRunner>();
+
+appBuilder.Services.AddHostedService<TraderService>();
 
 #endregion
 
