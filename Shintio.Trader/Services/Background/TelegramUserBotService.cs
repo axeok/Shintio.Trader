@@ -1,22 +1,17 @@
-﻿using System.Text.Json;
-using Binance.Net.Interfaces.Clients;
-using Microsoft.EntityFrameworkCore;
+﻿using Binance.Net.Interfaces.Clients;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Shintio.Trader.Common;
 using Shintio.Trader.Configuration;
-using Shintio.Trader.Database.Contexts;
 using Shintio.Trader.Utils;
 using TdLib;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
-using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.InlineQueryResults;
 
-namespace Shintio.Trader.Services;
+namespace Shintio.Trader.Services.Background;
 
 public class TelegramUserBotService : BackgroundService
 {
@@ -65,19 +60,19 @@ public class TelegramUserBotService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _bot = new TelegramBotClient(_telegramSecrets.AccessToken);
-
-        var receiverOptions = new ReceiverOptions()
-        {
-            AllowedUpdates = Array.Empty<UpdateType>()
-        };
-
-        _bot.StartReceiving(
-            updateHandler: HandleUpdateAsync,
-            errorHandler: HandleErrorAsync,
-            receiverOptions: receiverOptions,
-            cancellationToken: stoppingToken
-        );
+        // _bot = new TelegramBotClient(_telegramSecrets.AccessToken);
+        //
+        // var receiverOptions = new ReceiverOptions()
+        // {
+        //     AllowedUpdates = Array.Empty<UpdateType>()
+        // };
+        //
+        // _bot.StartReceiving(
+        //     updateHandler: HandleUpdateAsync,
+        //     errorHandler: HandleErrorAsync,
+        //     receiverOptions: receiverOptions,
+        //     cancellationToken: stoppingToken
+        // );
 
         var phoneNumber = _telegramSecrets.Phone;
 
@@ -104,8 +99,8 @@ public class TelegramUserBotService : BackgroundService
         // File.WriteAllText("messages.json", JsonSerializer.Serialize(messages
         //     .Select(FetchText)
         //     .OfType<string>()));
-
-        _userBot.MessageReceived += UserBotOnMessageReceived;
+        // await _userBot.StartCall(384118725);
+        // _userBot.MessageReceived += UserBotOnMessageReceived;
     }
 
     private string? FetchText(TdApi.Message message) =>

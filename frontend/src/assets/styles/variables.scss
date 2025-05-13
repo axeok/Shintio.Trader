@@ -1,0 +1,4 @@
+﻿@forward "./_vuetify";
+@use "./_vuetify" as *;
+
+$transition-duration: 0.28s !default;

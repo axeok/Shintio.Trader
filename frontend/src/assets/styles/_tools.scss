@@ -1,0 +1,158 @@
+﻿@use "sass:math";
+@use "variables" as v;
+@use "./tools/_border";
+@use "./tools/_colors";
+@use "./tools/_transition";
+@use "./tools/_z-index";
+
+.user-select-none {
+	user-select: none;
+
+	* {
+		user-select: none;
+	}
+}
+
+.pointer-events-none {
+	pointer-events: none;
+}
+
+.no-select {
+	@extend .user-select-none;
+	@extend .pointer-events-none;
+}
+
+@for $opacity from 1 to 10 {
+	.opacity-#{$opacity} {
+		opacity: math.div($opacity, 10);
+	}
+}
+
+@for $weight from 1 to 9 {
+	.font-weight-#{$weight * 100} {
+		font-weight: $weight * 100;
+	}
+}
+
+.text {
+	&-shadow {
+		filter: drop-shadow(0px 2px 8px rgba(35, 32, 61, 0.24));
+	}
+
+	&-outline {
+		text-shadow: 1px 2px 8px rgba(var(--v-theme-background), 0.3);
+	}
+	
+	&-readable {
+		text-shadow: 1px 1px 0.5px rgba(0, 0, 0, 0.5);
+	}
+}
+
+.filter {
+	&-shadow {
+		filter: drop-shadow(1px 2px 8px rgba(var(--v-theme-background), 0.3));
+	}
+}
+
+.position {
+	&-cover {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+	}
+
+	&-center {
+		position: absolute;
+		left: 50%;
+		top: 50%;
+		transform: translate(-50%, -50%);
+	}
+}
+
+.overflow {
+	&-x-scroll {
+		overflow-x: scroll;
+	}
+
+	&-y-scroll {
+		overflow-y: scroll;
+	}
+}
+
+.w {
+	&-screen {
+		width: calc(100vw * var(--vw-ratio));
+	}
+}
+
+.flex {
+	@for $i from 1 to 12 {
+		&-#{$i} {
+			flex: $i;
+		}
+	}
+}
+
+.letter-spacing {
+	&-0 {
+		letter-spacing: 0 !important;
+	}
+}
+
+.m {
+	&t {
+		&-0-first:first-child {
+			margin-top: 0 !important;
+		}
+	}
+
+	&l {
+		&-0-first:first-child {
+			margin-left: 0 !important;
+		}
+	}
+}
+
+.line-height {
+	&-initial {
+		line-height: initial !important;
+	}
+
+	&-normal {
+		line-height: normal !important;
+	}
+}
+
+.v-input {
+	&.r-small-input {
+		height: 32px;
+		min-height: 32px;
+
+		input, .v-field__input {
+			height: 32px;
+			min-height: 32px;
+			padding: 4px 8px;
+		}
+
+		.v-field {
+			padding-left: 8px;
+		}
+	}
+
+	&.r-x-small-input {
+		height: 24px;
+		min-height: 24px;
+
+		input, .v-field__input {
+			height: 24px;
+			min-height: 24px;
+			padding: 0 2px;
+		}
+
+		.v-field {
+			padding-left: 2px;
+		}
+	}
+}
