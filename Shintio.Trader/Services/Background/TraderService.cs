@@ -23,11 +23,13 @@ namespace Shintio.Trader.Services.Background;
 public class TraderService : BackgroundService
 {
 	private static readonly TimeSpan TimerInterval = TimeSpan.FromHours(1);
-	
-	private static readonly string DataPath = "skis-data.json";
-	private static readonly string OptionsPath = "skis-options.json";
 
-	private static readonly string Pair = CurrencyPair.DOGE_USDT;
+	private static readonly string[] Pairs =
+	[
+		CurrencyPair.DOGE_USDT,
+		CurrencyPair.PEPE_USDT,
+	];
+
 	private static readonly decimal ReservedBalance = 300;
 
 	private readonly ILogger<TraderService> _logger;
@@ -90,24 +92,27 @@ public class TraderService : BackgroundService
 	private async void TimerOnElapsed(object? sender, ElapsedEventArgs e)
 	{
 		_timer.Interval = TimeSpan.FromHours(1).TotalMilliseconds;
-		
-		await RunStrategy();
+
+		foreach (var pair in Pairs)
+		{
+			await RunStrategy(pair);
+		}
 	}
 
-	private async Task RunStrategy()
+	private async Task RunStrategy(string pair)
 	{
 		var (usdt, _, _) = await BinanceHelper.FetchBalances(_binanceClient);
-		var currentPrice = (await _binanceClient.UsdFuturesApi.ExchangeData.GetMarkPriceAsync(Pair)).Data.MarkPrice;
+		var currentPrice = (await _binanceClient.UsdFuturesApi.ExchangeData.GetMarkPriceAsync(pair)).Data.MarkPrice;
 
-		var data = GetOrCreateData();
-		var options = GetOrCreateOptions();
+		var data = GetOrCreateData(pair);
+		var options = GetOrCreateOptions(pair);
 
 		var (newData, orders, closeLongs, closeShorts) = SkisTradeStrategy.Run(currentPrice, usdt - ReservedBalance, data, options);
 
 		var report = new StringBuilder();
 
 		report.AppendLine(Invariant($"Свободный баланс: {usdt - ReservedBalance:F2} ({usdt:F2}) USDT"));
-		report.AppendLine(Invariant($"Текущая цена: {currentPrice:F6} {Pair}"));
+		report.AppendLine(Invariant($"Текущая цена: {currentPrice:F6} {pair}"));
 		report.AppendLine($"Старые параметры: {FormatData(data)}");
 		report.AppendLine($"Новые параметры: {FormatData(newData)}");
 
@@ -131,27 +136,27 @@ public class TraderService : BackgroundService
 		
 		await BotLog(report.ToString());
 
-		SaveData(newData);
+		SaveData(newData, pair);
 		
 		var reports = new List<string>();
 
 		if (closeLongs)
 		{
-			reports.Add(await BinanceHelper.CloseAllLongs(_binanceClient, Pair));
+			reports.Add(await BinanceHelper.CloseAllLongs(_binanceClient, pair));
 		}
 
 		if (closeShorts)
 		{
-			reports.Add(await BinanceHelper.CloseAllShorts(_binanceClient, Pair));
+			reports.Add(await BinanceHelper.CloseAllShorts(_binanceClient, pair));
 		}
 		
 		var exchangeInfo = await _binanceClient.UsdFuturesApi.ExchangeData.GetExchangeInfoAsync();
-		var symbolInfo = exchangeInfo.Data.Symbols.First(s => s.Name == Pair);
+		var symbolInfo = exchangeInfo.Data.Symbols.First(s => s.Name == pair);
 		var quantityPrecision = symbolInfo.QuantityPrecision;
 
 		foreach (var order in orders)
 		{
-			reports.Add(await BinanceHelper.TryPlaceOrder(_binanceClient, Pair, currentPrice, quantityPrecision, order));
+			reports.Add(await BinanceHelper.TryPlaceOrder(_binanceClient, pair, currentPrice, quantityPrecision, order));
 		}
 
 		foreach (var message in reports)
@@ -162,12 +167,12 @@ public class TraderService : BackgroundService
 		await LogBalance();
 	}
 
-	private async Task SellAll()
+	private async Task SellAll(string pair)
 	{
 		var reports = new List<string>();
 
-		reports.Add(await BinanceHelper.CloseAllLongs(_binanceClient, Pair));
-		reports.Add(await BinanceHelper.CloseAllShorts(_binanceClient, Pair));
+		reports.Add(await BinanceHelper.CloseAllLongs(_binanceClient, pair));
+		reports.Add(await BinanceHelper.CloseAllShorts(_binanceClient, pair));
 
 		foreach (var message in reports)
 		{
@@ -184,10 +189,10 @@ public class TraderService : BackgroundService
 		await BotLog(Invariant($"Текущий баланс: {usdt:F2} + {orders:F2} = {usdt + orders:F2} USDT | {bnb:F6} BNB"));
 	}
 
-	private async Task LogParameters()
+	private async Task LogParameters(string pair)
 	{
-		var data = GetOrCreateData();
-		var options = GetOrCreateOptions();
+		var data = GetOrCreateData(pair);
+		var options = GetOrCreateOptions(pair);
 		
 		var result = new StringBuilder();
 
@@ -229,8 +234,12 @@ public class TraderService : BackgroundService
 		{
 			return;
 		}
+		
+		var split = message.Text.Split(' ');
+		var command = split[0];
+		var pair = split.Length < 2 ? null : split[1];
 
-		switch (message.Text)
+		switch (command)
 		{
 			case "/ping":
 				await BotLog("Живой!");
@@ -238,18 +247,30 @@ public class TraderService : BackgroundService
 			case "/balance":
 				await LogBalance();
 				break;
-			case "/parameters":
-				await LogParameters();
+			case "/parameters" when await ValidatePair(pair):
+				await LogParameters(pair!);
 				break;
-			case "/run":
-				await RunStrategy();
+			case "/sell" when await ValidatePair(pair):
+				await SellAll(pair!);
 				break;
-			case "/sell":
-				await SellAll();
+			case "/run" when await ValidatePair(pair):
+				await RunStrategy(pair!);
 				break;
 		}
 	}
 
+	private async Task<bool> ValidatePair(string? pair)
+	{
+		if (Pairs.Contains(pair))
+		{
+			return true;
+		}
+
+		await BotLog("Неправильно указана валюта");
+
+		return false;
+	}
+	
 	private Task HandleErrorAsync(
 		ITelegramBotClient botClient,
 		Exception exception,
@@ -278,33 +299,45 @@ public class TraderService : BackgroundService
 		return Invariant($"{options.Quantity} | {options.Leverage} | {options.StartDelta:F4} | {options.StopDelta:F4}");
 	}
 
-	private SkisData GetOrCreateData()
+	private SkisData GetOrCreateData(string pair)
 	{
-		if (!File.Exists(DataPath))
+		var path = GetDataPath(pair);
+		if (!File.Exists(path))
 		{
 			return new SkisData(Trend.Flat, 0, 0, decimal.MaxValue);
 		}
 
-		return JsonSerializer.Deserialize<SkisData>(File.ReadAllText(DataPath))!;
+		return JsonSerializer.Deserialize<SkisData>(File.ReadAllText(path))!;
 	}
 
-	private void SaveData(SkisData data)
+	private void SaveData(SkisData data, string pair)
 	{
-		File.WriteAllText(DataPath, JsonSerializer.Serialize(data));
+		File.WriteAllText(GetDataPath(pair), JsonSerializer.Serialize(data));
 	}
 
-	private SkisOptions GetOrCreateOptions()
+	private SkisOptions GetOrCreateOptions(string pair)
 	{
-		if (!File.Exists(OptionsPath))
+		var path = GetOptionsPath(pair);
+		if (!File.Exists(path))
 		{
 			return new SkisOptions(5, 10, 0.010m, 0.04m);
 		}
 
-		return JsonSerializer.Deserialize<SkisOptions>(File.ReadAllText(OptionsPath))!;
+		return JsonSerializer.Deserialize<SkisOptions>(File.ReadAllText(path))!;
 	}
 
-	private void SaveOptions(SkisOptions options)
+	private void SaveOptions(SkisOptions options, string pair)
 	{
-		File.WriteAllText(OptionsPath, JsonSerializer.Serialize(options));
+		File.WriteAllText(GetOptionsPath(pair), JsonSerializer.Serialize(options));
+	}
+
+	private string GetDataPath(string pair)
+	{
+		return $"skis-data-{pair}.json";
+	}
+
+	private string GetOptionsPath(string pair)
+	{
+		return $"skis-options-{pair}.json";
 	}
 }
