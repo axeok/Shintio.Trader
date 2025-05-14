@@ -96,7 +96,14 @@ public class TraderService : BackgroundService
 
 		foreach (var pair in Pairs)
 		{
-			await RunStrategy(pair);
+			try
+			{
+				await RunStrategy(pair);
+			}
+			catch (Exception exception)
+			{
+				await BotLog($"{pair}: {exception.Message}");
+			}
 		}
 	}
 
@@ -321,7 +328,7 @@ public class TraderService : BackgroundService
 		var path = GetOptionsPath(pair);
 		if (!File.Exists(path))
 		{
-			return new SkisOptions(5, 10, 0.010m, 0.04m);
+			return new SkisOptions(5, 10, 0.01m, 0.04m);
 		}
 
 		return JsonSerializer.Deserialize<SkisOptions>(File.ReadAllText(path))!;
