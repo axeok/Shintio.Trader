@@ -30,7 +30,7 @@ public class TraderService : BackgroundService
 		CurrencyPair._1000PEPE_USDT,
 	];
 
-	private static readonly decimal ReservedBalance = 800;
+	private static readonly decimal ReservedBalance = 400;
 
 	private readonly ILogger<TraderService> _logger;
 	private readonly ITelegramBotClient _bot;
