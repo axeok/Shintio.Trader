@@ -19,4 +19,6 @@ public static class CurrencyPair
     public static string BCH_USDT = "BCHUSDT";
     public static string FIL_USDT = "FILUSDT";
     public static string PEPE_USDT = "PEPEUSDT";
+    public static string _1000PEPE_USDT = "1000PEPEUSDT";
+    public static string WIF_USDT = "WIFUSDT";
 }

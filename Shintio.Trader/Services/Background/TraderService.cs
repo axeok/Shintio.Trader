@@ -27,7 +27,7 @@ public class TraderService : BackgroundService
 	private static readonly string[] Pairs =
 	[
 		CurrencyPair.DOGE_USDT,
-		CurrencyPair.PEPE_USDT,
+		CurrencyPair._1000PEPE_USDT,
 	];
 
 	private static readonly decimal ReservedBalance = 300;
