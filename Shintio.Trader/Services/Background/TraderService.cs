@@ -28,9 +28,10 @@ public class TraderService : BackgroundService
 	[
 		CurrencyPair.DOGE_USDT,
 		CurrencyPair._1000PEPE_USDT,
+		CurrencyPair.WIF_USDT,
 	];
 
-	private static readonly decimal ReservedBalance = 400;
+	private static readonly decimal ReservedBalance = 900;
 
 	private readonly ILogger<TraderService> _logger;
 	private readonly ITelegramBotClient _bot;
