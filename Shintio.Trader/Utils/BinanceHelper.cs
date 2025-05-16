@@ -52,6 +52,23 @@ public static class BinanceHelper
 			.Sum(b => b.WalletBalance);
 	}
 
+	public static async Task<IDictionary<string, decimal>> FetchOrdersPnl(
+		IBinanceRestClient binanceClient,
+		IReadOnlyCollection<string> pairs
+	)
+	{
+		var positions = (await binanceClient.UsdFuturesApi.Account.GetPositionInformationAsync())
+			.Data
+			.ToArray();
+
+		return pairs.ToDictionary(
+			pair => pair,
+			pair => positions
+				.Where(p => p.Symbol == pair)
+				.Sum(p => p.UnrealizedPnl)
+		);
+	}
+
 	public static async Task<string> TryPlaceOrder(
 		IBinanceRestClient binanceClient,
 		string pair,

@@ -197,6 +197,15 @@ public class TraderService : BackgroundService
 		await BotLog(Invariant($"Текущий баланс: {usdt:F2} + {orders:F2} = {usdt + orders:F2} USDT | {bnb:F6} BNB"));
 	}
 
+	private async Task LogOrders()
+	{
+		var orders = await BinanceHelper.FetchOrdersPnl(_binanceClient, Pairs);
+
+		var result = orders.Select(p => Invariant($"[{p.Key}]: {p.Value:F2}"));
+
+		await BotLog(string.Join("\n", result));
+	}
+
 	private async Task LogParameters(string pair)
 	{
 		var data = GetOrCreateData(pair);
@@ -254,6 +263,9 @@ public class TraderService : BackgroundService
 				break;
 			case "/balance":
 				await LogBalance();
+				break;
+			case "/orders":
+				await LogOrders();
 				break;
 			case "/parameters" when await ValidatePair(pair):
 				await LogParameters(pair!);
