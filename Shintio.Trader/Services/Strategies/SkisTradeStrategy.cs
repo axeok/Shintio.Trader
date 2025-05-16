@@ -1,11 +1,12 @@
 ﻿using Shintio.Trader.Enums;
 using Shintio.Trader.Models;
+using Shintio.Trader.Models.Strategies.Skis;
 
 namespace Shintio.Trader.Services.Strategies;
 
 public static class SkisTradeStrategy
 {
-	public static (SkisData data, IReadOnlyCollection<SkisOrder> orders, bool closeLongs, bool closeShorts) Run(
+	public static (SkisData data, IReadOnlyCollection<StrategyOrder> orders, bool closeLongs, bool closeShorts) Run(
 		decimal currentPrice,
 		decimal balance,
 		SkisData data,
@@ -74,21 +75,21 @@ public static class SkisTradeStrategy
 
 		var leverage = Math.Clamp(Math.Floor(options.Leverage + (balance / 100)), 10, 75);
 
-		var orders = new List<SkisOrder>();
+		var orders = new List<StrategyOrder>();
 
 		switch (trend)
 		{
 			case Trend.Up:
 				if (quantity >= 1)
 				{
-					orders.Add(new SkisOrder(false, quantity, leverage));
+					orders.Add(new StrategyOrder(false, quantity, leverage));
 				}
 
 				break;
 			case Trend.Down:
 				if (quantity >= 1)
 				{
-					orders.Add(new SkisOrder(true, quantity, leverage));
+					orders.Add(new StrategyOrder(true, quantity, leverage));
 				}
 
 				break;

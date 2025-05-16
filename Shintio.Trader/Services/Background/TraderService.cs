@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 using Shintio.Trader.Configuration;
 using Shintio.Trader.Enums;
 using Shintio.Trader.Models;
+using Shintio.Trader.Models.Strategies.Skis;
 using Shintio.Trader.Services.Strategies;
 using Shintio.Trader.Utils;
 using Telegram.Bot;

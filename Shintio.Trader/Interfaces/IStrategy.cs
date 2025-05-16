@@ -1,19 +1,14 @@
 ﻿using Shintio.Trader.Models;
+using Shintio.Trader.Models.Sandbox;
+using Shintio.Trader.Models.Strategies.Skis;
 using Shintio.Trader.Tables;
 
 namespace Shintio.Trader.Interfaces;
 
-public interface IStrategy
+public interface IStrategy<TData, TOptions, TResult>
+	where TData : IStrategyData
+	where TOptions : IStrategyOptions
+	where TResult : StrategyResult<TData>
 {
-	public virtual bool AutoProcessMarket => true;
-	public virtual int RunStep => 1;
-	public virtual int MaxHistoryCount => (int)TimeSpan.FromHours(6).TotalSeconds;
-	
-	public decimal InitialBalance { get; }
-
-	public bool ValidateBalance(TradeAccount account, decimal balanceToRemove, decimal currentPrice);
-	public string GetLogString(TradeAccount account, decimal currentPrice, IReadOnlyCollection<KlineItem> history, int i);
-	
-	public void Run(TradeAccount account, decimal currentPrice, IReadOnlyCollection<KlineItem> history, int i);
-	
+	public TResult Run(decimal currentPrice, decimal balance, TData data, TOptions options);
 }

@@ -148,11 +148,11 @@
 
 	const series = $computed(() => {
 		return [
-			prices,
+			// prices,
 			balances,
-			starts,
-			ends,
-			deltaBalances,
+			// starts,
+			// ends,
+			// deltaBalances,
 			// winratesCount,
 			// winratesSum,
 		];

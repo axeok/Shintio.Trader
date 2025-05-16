@@ -38,6 +38,8 @@ public class BinanceService
 		    WebCallResult<IEnumerable<IBinanceKline>> result;
 		    try
 		    {
+			    _logger.LogInformation($"[{pair}] Fetching Klines for {startTime:yyyy.MM.dd} -> {endTime:yyyy.MM.dd} ({(int)(endTime - startTime).TotalHours} hours)...");
+			    
 			    result = await Client.SpotApi.ExchangeData.GetKlinesAsync(
 				    pair,
 				    interval,

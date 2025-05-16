@@ -1,11 +1,12 @@
 ﻿using Shintio.Trader.Interfaces;
 using Shintio.Trader.Models;
+using Shintio.Trader.Models.Sandbox;
 using Shintio.Trader.Tables;
 using Shintio.Trader.Utils;
 
 namespace Shintio.Trader.Services.Strategies;
 
-public class SkisStrategy2 : IStrategy
+public class SkisStrategy2 : IStrategyOld
 {
 	private readonly decimal _quantity;
 	private readonly decimal _leverage;
@@ -116,7 +117,7 @@ public class SkisStrategy2 : IStrategy
 		}
 	}
 
-	private void CloseOrders(TradeAccount account, Order[] orders, decimal currentPrice)
+	private void CloseOrders(TradeAccount account, SandboxOrder[] orders, decimal currentPrice)
 	{
 		foreach (var order in orders)
 		{
