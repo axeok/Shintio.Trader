@@ -20,24 +20,25 @@ public class StrategiesBenchmark5 : BackgroundService
 
 	public static readonly string[] Pairs =
 	[
-		CurrencyPair.ETH_USDT,
-		CurrencyPair.SOL_USDT,
-		CurrencyPair.BTC_USDT,
-		CurrencyPair.XRP_USDT,
+		// CurrencyPair.ETH_USDT,
+		// CurrencyPair.SOL_USDT,
+		// CurrencyPair.BTC_USDT,
+		// CurrencyPair.XRP_USDT,
 		CurrencyPair.DOGE_USDT,
-		CurrencyPair.LISTA_USDT,
-		CurrencyPair.OM_USDT,
-		CurrencyPair.BNB_USDT,
-		CurrencyPair.ADA_USDT,
-		CurrencyPair.AVAX_USDT,
-		CurrencyPair.TRX_USDT,
-		CurrencyPair.LTC_USDT,
-		CurrencyPair.LINK_USDT,
-		CurrencyPair.NEAR_USDT,
-		CurrencyPair.BCH_USDT,
-		CurrencyPair.FIL_USDT,
-		CurrencyPair.PEPE_USDT,
-		CurrencyPair.WIF_USDT,
+		// CurrencyPair.NEAR_USDT,
+		// CurrencyPair.LISTA_USDT,
+		// CurrencyPair.OM_USDT,
+		// CurrencyPair.BNB_USDT,
+		// CurrencyPair.ADA_USDT,
+		// CurrencyPair.AVAX_USDT,
+		// CurrencyPair.TRX_USDT,
+		// CurrencyPair.LTC_USDT,
+		// CurrencyPair.LINK_USDT,
+		// CurrencyPair.NEAR_USDT,
+		// CurrencyPair.BCH_USDT,
+		// CurrencyPair.FIL_USDT,
+		// CurrencyPair.PEPE_USDT,
+		// CurrencyPair.WIF_USDT,
 	];
 
 	// public static readonly DateTime StartTime = new(2024, 11, 1);
@@ -68,7 +69,7 @@ public class StrategiesBenchmark5 : BackgroundService
 
 	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 	{
-		var start = new DateTime(2025, 5, 12);
+		var start = new DateTime(2025, 5, 1);
 		var end = new DateTime(2025, 5, 17);
 
 		var bests = new Dictionary<string, IReadOnlyCollection<decimal>>();
@@ -118,13 +119,18 @@ public class StrategiesBenchmark5 : BackgroundService
 			stopwatch.Stop();
 			_logger.LogInformation(stopwatch.Elapsed.ToString());
 
-			var best = result.MaxBy(p => p.Value.Last());
+			foreach (var (manager, values) in result)
+			{
+				bests[$"{pair} : {manager.Options}"] = values;
+			}
 
-			// var best = result.MaxBy(p => p.Value.Average(d => d[0]));
-			_logger.LogInformation(best.Key.Options.ToString());
-			_logger.LogInformation(best.Value.Last().ToString());
-
-			bests[$"{pair} : {best.Key.Options}"] = best.Value;
+			// var best = result.MaxBy(p => p.Value.Last());
+			//
+			// // var best = result.MaxBy(p => p.Value.Average(d => d[0]));
+			// _logger.LogInformation(best.Key.Options.ToString());
+			// _logger.LogInformation(best.Value.Last().ToString());
+			//
+			// bests[$"{pair} : {best.Key.Options}"] = best.Value;
 			
 			// var bestIndex = FindMostStableGrowthIndex(result.Values.Select(d => d.ToArray()).ToList(), 10);
 			// if (bestIndex >= 0)
