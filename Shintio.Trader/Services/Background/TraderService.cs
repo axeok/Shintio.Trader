@@ -124,6 +124,9 @@ public class TraderService : BackgroundService
 
 		var report = new StringBuilder();
 
+		report.AppendLine($"[{pair}] https://www.binance.com/futures/{pair}");
+		report.AppendLine();
+		
 		report.AppendLine(Invariant($"Свободный баланс: {usdt - ReservedBalance:F2} ({usdt:F2}) USDT"));
 		report.AppendLine(Invariant($"Текущая цена: {currentPrice:F6} {pair}"));
 		report.AppendLine($"Старые параметры: {FormatData(data)}");
@@ -140,12 +143,6 @@ public class TraderService : BackgroundService
 		}
 
 		report.AppendLine();
-
-		foreach (var order in orders)
-		{
-			report.AppendLine(Invariant(
-				$"Открываем {(order.IsShort ? "шорт" : "лонг")} на сумму {order.Quantity:F2} с плечом x{order.Leverage:F0}"));
-		}
 		
 		SaveData(newData, pair);
 
@@ -279,6 +276,13 @@ public class TraderService : BackgroundService
 				break;
 			case "/run" when await ValidatePair(pair):
 				await RunStrategy(pair!);
+				break;
+			case "/run_all":
+				foreach (var p in Pairs)
+				{
+					await RunStrategy(p);
+				}
+
 				break;
 		}
 	}
