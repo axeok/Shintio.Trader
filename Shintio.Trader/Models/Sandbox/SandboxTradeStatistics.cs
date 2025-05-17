@@ -1,6 +1,6 @@
-﻿namespace Shintio.Trader.Models;
+﻿namespace Shintio.Trader.Models.Sandbox;
 
-public class TradeStatistics
+public class SandboxTradeStatistics
 {
 	public Statistics Shorts = new();
 	public Statistics Longs = new();

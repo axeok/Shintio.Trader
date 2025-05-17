@@ -1,6 +1,7 @@
 ﻿using Shintio.Trader.Enums;
 using Shintio.Trader.Interfaces;
 using Shintio.Trader.Models;
+using Shintio.Trader.Models.Sandbox;
 using Shintio.Trader.Services;
 using Shintio.Trader.Services.Strategies;
 
@@ -27,15 +28,15 @@ public class DeltaFinder
 		decimal leverage,
 		DateTime start,
 		DateTime end,
-		SkisStrategy.Trend trend,
+		SkisStrategyOld.Trend trend,
 		int trendSteps,
 		decimal lastHigh,
 		decimal lastLow,
 		decimal balance,
-		Order[] orders
+		SandboxOrder[] orders
 	)
 	{
-		var strategies = new List<(TradeAccount account, SkisStrategy strategy, List<decimal> results)>();
+		var strategies = new List<(TradeAccount account, SkisStrategyOld strategy, List<decimal> results)>();
 		for (var endDelta = EndDeltaMin; endDelta <= EndDeltaMax; endDelta += EndDeltaStep)
 		{
 			for (var startDelta = StartDeltaMin; startDelta < endDelta / 2; startDelta += StartDeltaStep)
@@ -44,7 +45,7 @@ public class DeltaFinder
 				account.Balance = balance;
 				account.Orders = orders.Select(o => o with { }).ToList();
 
-				var strategy = new SkisStrategy(
+				var strategy = new SkisStrategyOld(
 					quantity,
 					leverage,
 					startDelta,

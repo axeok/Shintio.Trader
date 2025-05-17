@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Shintio.Trader.Enums;
 using Shintio.Trader.Interfaces;
 using Shintio.Trader.Models;
+using Shintio.Trader.Models.Sandbox;
 using Shintio.Trader.Services.Strategies;
 using Shintio.Trader.Tables;
 using Shintio.Trader.Utils;
@@ -80,7 +81,7 @@ public class StrategiesBenchmark3 : BackgroundService
 							$"{initialBalance} - {segment}/{totalDays / DaysPerSegment} - {startDelta}/{StartDeltaMax} - {endDelta}/{EndDeltaMax}");
 
 						var step = 0;
-						var strategy = new SkisStrategy(
+						var strategy = new SkisStrategyOld(
 							10,
 							10,
 							startDelta,

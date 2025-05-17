@@ -1,11 +1,12 @@
 ﻿using Shintio.Trader.Interfaces;
 using Shintio.Trader.Models;
+using Shintio.Trader.Models.Sandbox;
 using Shintio.Trader.Tables;
 using Shintio.Trader.Utils;
 
 namespace Shintio.Trader.Services.Strategies;
 
-public class GlebStrategy : IStrategy
+public class GlebStrategyOld : IStrategyOld
 {
 	public int RunStep => 60;
 	public decimal InitialBalance => 20_000m;

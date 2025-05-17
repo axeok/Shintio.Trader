@@ -74,7 +74,7 @@ public static class BinanceHelper
 		string pair,
 		decimal currentPrice,
 		int quantityPrecision,
-		SkisOrder order
+		StrategyOrder order
 	)
 	{
 		var leverageResult =

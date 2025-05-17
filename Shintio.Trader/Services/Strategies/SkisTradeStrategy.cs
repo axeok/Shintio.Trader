@@ -1,11 +1,12 @@
 ﻿using Shintio.Trader.Enums;
 using Shintio.Trader.Models;
+using Shintio.Trader.Models.Strategies.Skis;
 
 namespace Shintio.Trader.Services.Strategies;
 
 public static class SkisTradeStrategy
 {
-	public static (SkisData data, IReadOnlyCollection<SkisOrder> orders, bool closeLongs, bool closeShorts) Run(
+	public static (SkisData data, IReadOnlyCollection<StrategyOrder> orders, bool closeLongs, bool closeShorts) Run(
 		decimal currentPrice,
 		decimal balance,
 		SkisData data,
@@ -25,10 +26,22 @@ public static class SkisTradeStrategy
 
 		switch (trend)
 		{
+			case Trend.Flat:
+				if (deltaHigh >= options.StartDelta)
+				{
+					trend = Trend.Down;
+				}
+				else if (deltaLow >= options.StartDelta)
+				{
+					trend = Trend.Up;
+				}
+
+				break;
 			case Trend.Up:
 				if (deltaHigh >= options.StopDelta)
 				{
 					lastLow = currentPrice;
+					lastHigh = currentPrice;
 					trend = Trend.Flat;
 					closeLongs = true;
 					trendSteps = 0;
@@ -38,6 +51,7 @@ public static class SkisTradeStrategy
 			case Trend.Down:
 				if (deltaLow >= options.StopDelta)
 				{
+					lastLow = currentPrice;
 					lastHigh = currentPrice;
 					trend = Trend.Flat;
 					closeShorts = true;
@@ -45,19 +59,6 @@ public static class SkisTradeStrategy
 				}
 
 				break;
-		}
-
-		if (trend == Trend.Flat)
-		{
-			if (deltaHigh >= options.StartDelta)
-			{
-				trend = Trend.Down;
-			}
-
-			if (deltaLow >= options.StartDelta)
-			{
-				trend = Trend.Up;
-			}
 		}
 
 		trendSteps++;
@@ -74,21 +75,21 @@ public static class SkisTradeStrategy
 
 		var leverage = Math.Clamp(Math.Floor(options.Leverage + (balance / 100)), 10, 75);
 
-		var orders = new List<SkisOrder>();
+		var orders = new List<StrategyOrder>();
 
 		switch (trend)
 		{
 			case Trend.Up:
 				if (quantity >= 1)
 				{
-					orders.Add(new SkisOrder(false, quantity, leverage));
+					orders.Add(new StrategyOrder(false, quantity, leverage));
 				}
 
 				break;
 			case Trend.Down:
 				if (quantity >= 1)
 				{
-					orders.Add(new SkisOrder(true, quantity, leverage));
+					orders.Add(new StrategyOrder(true, quantity, leverage));
 				}
 
 				break;

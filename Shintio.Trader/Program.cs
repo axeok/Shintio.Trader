@@ -69,6 +69,7 @@ appBuilder.Services.AddSingleton<ITelegramBotClient>(p =>
 
 appBuilder.Services.AddSingleton<BinanceService>();
 appBuilder.Services.AddSingleton<SandboxService>();
+appBuilder.Services.AddSingleton<StrategiesRunner>();
 
 // var json = JsonObject.Parse(File.ReadAllText("benchmark.json"));
 //
@@ -97,6 +98,7 @@ appBuilder.Services.AddSingleton<SandboxService>();
 // appBuilder.Services.AddHostedService<StrategiesBenchmark2>();
 // appBuilder.Services.AddHostedService<StrategiesBenchmark3>();
 // appBuilder.Services.AddHostedService<StrategiesBenchmark4>();
+// appBuilder.Services.AddHostedService<StrategiesBenchmark5>();
 // appBuilder.Services.AddHostedService<StrategiesRunner>();
 
 appBuilder.Services.AddHostedService<TraderService>();

@@ -1,4 +1,4 @@
-﻿namespace Shintio.Trader.Models;
+﻿namespace Shintio.Trader.Models.Sandbox;
 
 public class TradeAccount
 {
@@ -24,15 +24,15 @@ public class TradeAccount
 	// public decimal ReservedBalance { get; set; } = 0;
 	public decimal PayedCommission { get; set; } = 0;
 
-	public List<Order> Orders { get; set; } = new();
-	public List<Order> PendingOrders { get; } = new();
+	public List<SandboxOrder> Orders { get; set; } = new();
+	public List<SandboxOrder> PendingOrders { get; } = new();
 
-	public TradeStatistics Statistics { get; } = new();
+	public SandboxTradeStatistics Statistics { get; } = new();
 
-	public IEnumerable<Order> Longs => Orders.Where(o => !o.IsShort);
-	public IEnumerable<Order> Shorts => Orders.Where(o => o.IsShort);
+	public IEnumerable<SandboxOrder> Longs => Orders.Where(o => !o.IsShort);
+	public IEnumerable<SandboxOrder> Shorts => Orders.Where(o => o.IsShort);
 
-	public (Order[] longs, Order[] shorts) LongsAndShorts => (Longs.ToArray(), Shorts.ToArray());
+	public (SandboxOrder[] longs, SandboxOrder[] shorts) LongsAndShorts => (Longs.ToArray(), Shorts.ToArray());
 	
 	#region Orders
 
@@ -55,7 +55,7 @@ public class TradeAccount
 		Balance -= balanceToRemove;
 		PayedCommission += commission;
 
-		AddOrder(new Order(isShort, price, quantity, leverage, takeProfit, stopLoss));
+		AddOrder(new SandboxOrder(isShort, price, quantity, leverage, takeProfit, stopLoss));
 
 		return true;
 	}
@@ -66,7 +66,7 @@ public class TradeAccount
 	public bool TryOpenShort(decimal price, decimal quantity, decimal leverage, decimal? takeProfit, decimal? stopLoss)
 		=> TryOpenOrder(true, price, quantity, leverage, takeProfit, stopLoss);
 
-	public decimal CloseOrder(Order order, decimal currentPrice)
+	public decimal CloseOrder(SandboxOrder order, decimal currentPrice)
 	{
 		var quantity = order.CalculateCurrentQuantity(currentPrice);
 
@@ -108,7 +108,7 @@ public class TradeAccount
 
 	#region PendingOrders
 
-	public void AddPendingOrder(Order order)
+	public void AddPendingOrder(SandboxOrder order)
 	{
 		PendingOrders.Add(order);
 	}
@@ -120,7 +120,7 @@ public class TradeAccount
 		decimal? takeProfit,
 		decimal? stopLoss
 	)
-		=> AddPendingOrder(new Order(false, price, quantity, leverage, takeProfit, stopLoss));
+		=> AddPendingOrder(new SandboxOrder(false, price, quantity, leverage, takeProfit, stopLoss));
 
 	public void AddPendingShort(
 		decimal price,
@@ -129,9 +129,9 @@ public class TradeAccount
 		decimal? takeProfit,
 		decimal? stopLoss
 	)
-		=> AddPendingOrder(new Order(true, price, quantity, leverage, takeProfit, stopLoss));
+		=> AddPendingOrder(new SandboxOrder(true, price, quantity, leverage, takeProfit, stopLoss));
 
-	public void AddOrder(Order order)
+	public void AddOrder(SandboxOrder order)
 	{
 		Orders.Add(order);
 

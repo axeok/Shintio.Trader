@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 using Shintio.Trader.Configuration;
 using Shintio.Trader.Enums;
 using Shintio.Trader.Models;
+using Shintio.Trader.Models.Strategies.Skis;
 using Shintio.Trader.Services.Strategies;
 using Shintio.Trader.Utils;
 using Telegram.Bot;
@@ -29,6 +30,8 @@ public class TraderService : BackgroundService
 		CurrencyPair.DOGE_USDT,
 		CurrencyPair._1000PEPE_USDT,
 		CurrencyPair.WIF_USDT,
+		CurrencyPair.ETH_USDT,
+		CurrencyPair.NEAR_USDT,
 	];
 
 	private static readonly decimal ReservedBalance = 900;
@@ -105,6 +108,8 @@ public class TraderService : BackgroundService
 				await BotLog($"{pair}: {exception.Message}");
 			}
 		}
+		
+		await LogBalance();
 	}
 
 	private async Task RunStrategy(string pair)
@@ -142,20 +147,16 @@ public class TraderService : BackgroundService
 				$"Открываем {(order.IsShort ? "шорт" : "лонг")} на сумму {order.Quantity:F2} с плечом x{order.Leverage:F0}"));
 		}
 		
-		await BotLog(report.ToString());
-
 		SaveData(newData, pair);
-		
-		var reports = new List<string>();
 
 		if (closeLongs)
 		{
-			reports.Add(await BinanceHelper.CloseAllLongs(_binanceClient, pair));
+			report.AppendLine(await BinanceHelper.CloseAllLongs(_binanceClient, pair));
 		}
 
 		if (closeShorts)
 		{
-			reports.Add(await BinanceHelper.CloseAllShorts(_binanceClient, pair));
+			report.AppendLine(await BinanceHelper.CloseAllShorts(_binanceClient, pair));
 		}
 		
 		var exchangeInfo = await _binanceClient.UsdFuturesApi.ExchangeData.GetExchangeInfoAsync();
@@ -164,15 +165,10 @@ public class TraderService : BackgroundService
 
 		foreach (var order in orders)
 		{
-			reports.Add(await BinanceHelper.TryPlaceOrder(_binanceClient, pair, currentPrice, quantityPrecision, order));
+			report.AppendLine(await BinanceHelper.TryPlaceOrder(_binanceClient, pair, currentPrice, quantityPrecision, order));
 		}
 
-		foreach (var message in reports)
-		{
-			await BotLog(message);
-		}
-
-		await LogBalance();
+		await BotLog(report.ToString());
 	}
 
 	private async Task SellAll(string pair)
@@ -213,8 +209,9 @@ public class TraderService : BackgroundService
 		
 		var result = new StringBuilder();
 
-		result.AppendLine(FormatData(data));
-		result.AppendLine(FormatOptions(options));
+		result.AppendLine(pair);
+		result.AppendLine($"Data: {FormatData(data)}");
+		result.AppendLine($"Data: {FormatOptions(options)}");
 
 		await BotLog(result.ToString());
 	}
@@ -264,6 +261,13 @@ public class TraderService : BackgroundService
 			case "/balance":
 				await LogBalance();
 				break;
+			case "/params":
+				foreach (var p in Pairs)
+				{
+					await LogParameters(p);
+				}
+
+				break;
 			case "/orders":
 				await LogOrders();
 				break;
@@ -311,12 +315,12 @@ public class TraderService : BackgroundService
 
 	private string FormatData(SkisData data)
 	{
-		return Invariant($"{data.Trend} | {data.TrendSteps} | {data.LastHigh:F4} | {data.LastLow:F4}");
+		return Invariant($"{data.Trend} | {data.TrendSteps} | High {data.LastHigh:F4} | Low {data.LastLow:F4}");
 	}
 
 	private string FormatOptions(SkisOptions options)
 	{
-		return Invariant($"{options.Quantity} | {options.Leverage} | {options.StartDelta:F4} | {options.StopDelta:F4}");
+		return Invariant($"{options.Quantity} | {options.Leverage} | Start {options.StartDelta:F4} | Stop {options.StopDelta:F4}");
 	}
 
 	private SkisData GetOrCreateData(string pair)

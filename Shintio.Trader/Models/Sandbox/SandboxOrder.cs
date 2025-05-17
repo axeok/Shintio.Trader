@@ -1,8 +1,8 @@
 ﻿using Shintio.Trader.Utils;
 
-namespace Shintio.Trader.Models;
+namespace Shintio.Trader.Models.Sandbox;
 
-public record Order(
+public record SandboxOrder(
 	bool IsShort,
 	decimal Price,
 	decimal Quantity,
