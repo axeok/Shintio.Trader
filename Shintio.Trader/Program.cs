@@ -97,10 +97,11 @@ appBuilder.Services.AddSingleton<StrategiesRunner>();
 // appBuilder.Services.AddHostedService<StrategiesBenchmark>();
 // appBuilder.Services.AddHostedService<StrategiesBenchmark2>();
 // appBuilder.Services.AddHostedService<StrategiesBenchmark3>();
-appBuilder.Services.AddHostedService<StrategiesBenchmark4>();
+// appBuilder.Services.AddHostedService<StrategiesBenchmark4>();
+// appBuilder.Services.AddHostedService<StrategiesBenchmark5>();
 // appBuilder.Services.AddHostedService<StrategiesRunner>();
 
-// appBuilder.Services.AddHostedService<TraderService>();
+appBuilder.Services.AddHostedService<TraderService>();
 
 #endregion
 

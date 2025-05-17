@@ -90,7 +90,16 @@ public class StrategiesRunner
 			{
 				var currentPrice = item.OpenPrice;
 
-				manager.Run(currentPrice, step);
+				// if (manager.Account.Balance > 0)
+				{
+					if (manager.Account.CalculateTotalCurrentQuantity(currentPrice) <= 10)
+					{
+						manager.Account.Balance = 0;
+						manager.Account.Orders.Clear();
+					}
+					
+					manager.Run(currentPrice, step);
+				}
 
 				if (step % collectStep == 0)
 				{

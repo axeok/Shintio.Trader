@@ -27,10 +27,22 @@ public class SkisStrategy : IStrategy<SkisData, SkisOptions, StrategyResult<Skis
 
 		switch (trend)
 		{
+			case Trend.Flat:
+				if (deltaHigh >= options.StartDelta)
+				{
+					trend = Trend.Down;
+				}
+				else if (deltaLow >= options.StartDelta)
+				{
+					trend = Trend.Up;
+				}
+
+				break;
 			case Trend.Up:
 				if (deltaHigh >= options.StopDelta)
 				{
 					lastLow = currentPrice;
+					lastHigh = currentPrice;
 					trend = Trend.Flat;
 					closeLongs = true;
 					trendSteps = 0;
@@ -40,6 +52,7 @@ public class SkisStrategy : IStrategy<SkisData, SkisOptions, StrategyResult<Skis
 			case Trend.Down:
 				if (deltaLow >= options.StopDelta)
 				{
+					lastLow = currentPrice;
 					lastHigh = currentPrice;
 					trend = Trend.Flat;
 					closeShorts = true;
@@ -47,19 +60,6 @@ public class SkisStrategy : IStrategy<SkisData, SkisOptions, StrategyResult<Skis
 				}
 
 				break;
-		}
-
-		if (trend == Trend.Flat)
-		{
-			if (deltaHigh >= options.StartDelta)
-			{
-				trend = Trend.Down;
-			}
-
-			if (deltaLow >= options.StartDelta)
-			{
-				trend = Trend.Up;
-			}
 		}
 
 		trendSteps++;

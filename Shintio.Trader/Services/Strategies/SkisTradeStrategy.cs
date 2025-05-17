@@ -26,10 +26,22 @@ public static class SkisTradeStrategy
 
 		switch (trend)
 		{
+			case Trend.Flat:
+				if (deltaHigh >= options.StartDelta)
+				{
+					trend = Trend.Down;
+				}
+				else if (deltaLow >= options.StartDelta)
+				{
+					trend = Trend.Up;
+				}
+
+				break;
 			case Trend.Up:
 				if (deltaHigh >= options.StopDelta)
 				{
 					lastLow = currentPrice;
+					lastHigh = currentPrice;
 					trend = Trend.Flat;
 					closeLongs = true;
 					trendSteps = 0;
@@ -39,6 +51,7 @@ public static class SkisTradeStrategy
 			case Trend.Down:
 				if (deltaLow >= options.StopDelta)
 				{
+					lastLow = currentPrice;
 					lastHigh = currentPrice;
 					trend = Trend.Flat;
 					closeShorts = true;
@@ -46,19 +59,6 @@ public static class SkisTradeStrategy
 				}
 
 				break;
-		}
-
-		if (trend == Trend.Flat)
-		{
-			if (deltaHigh >= options.StartDelta)
-			{
-				trend = Trend.Down;
-			}
-
-			if (deltaLow >= options.StartDelta)
-			{
-				trend = Trend.Up;
-			}
 		}
 
 		trendSteps++;

@@ -1,5 +1,6 @@
 <template>
 	<div class="pa-4">
+		{{ data.Pair }}
 		<apexchart
 			width="100%"
 			height="800"
@@ -73,22 +74,25 @@
 		})),
 	}));
 
-	const winratesCount = $computed(() => ({
-		name: "Winrate (Count)",
-		type: "line",
-		data: data.WinratesCount.map((value, i) => ({
+
+	const shorts = $computed(() => ({
+		name: "Shorts",
+		type: "bar",
+		data: data.Shorts.map((value, i) => ({
 			x: dates[i],
 			y: value,
 		})),
+		color: "rgb(239, 64, 60)",
 	}));
 
-	const winratesSum = $computed(() => ({
-		name: "Winrate (Sum)",
-		type: "line",
-		data: data.WinratesSum.map((value, i) => ({
+	const longs = $computed(() => ({
+		name: "Longs",
+		type: "bar",
+		data: data.Longs.map((value, i) => ({
 			x: dates[i],
 			y: value,
 		})),
+		color: "rgb(0, 183, 70)",
 	}));
 
 	const options = $ref({
@@ -136,13 +140,13 @@
 					text: "Start/End",
 				},
 			},
-			// {
-			// 	decimalsInFloat: 4,
-			// 	seriesName: ["Winrate (Count)", "Winrate (Sum)"],
-			// 	title: {
-			// 		text: "Winrate",
-			// 	},
-			// },
+			{
+				decimalsInFloat: 0,
+				seriesName: ["Shorts", "Longs"],
+				title: {
+					text: "SHORTS/LONGS COUNT",
+				},
+			},
 		],
 	});
 
@@ -150,6 +154,8 @@
 		return [
 			// prices,
 			balances,
+			shorts,
+			longs,
 			// starts,
 			// ends,
 			// deltaBalances,

@@ -18,7 +18,7 @@ public class StrategiesBenchmark4 : BackgroundService
 	// public static readonly decimal BaseCommissionPercent = 0;
 	public static readonly decimal BaseCommissionPercent = 0.0005m;
 
-	public static readonly string Pair = CurrencyPair.DOGE_USDT;
+	public static readonly string Pair = CurrencyPair.ETH_USDT;
 
 	// public static readonly DateTime StartTime = new(2024, 11, 1);
 	// public static readonly DateTime StartTime = new(2024, 05, 1);
@@ -53,9 +53,9 @@ public class StrategiesBenchmark4 : BackgroundService
 
 		var managers = new List<SkisSandboxStrategyManager>();
 
-		for (var dStart = 0.01m; dStart <= 0.2m; dStart += 0.001m)
+		for (var dStart = 0.001m; dStart <= 0.2m; dStart += 0.001m)
 		{
-			for (var dEnd = 0.01m; dEnd <= 0.2m; dEnd += 0.001m)
+			for (var dEnd = 0.001m; dEnd <= 0.2m; dEnd += 0.001m)
 			{
 				var strategy = new SkisSandboxStrategyManager(
 					500,
@@ -72,7 +72,7 @@ public class StrategiesBenchmark4 : BackgroundService
 		var totalCollects = (int)totalSteps / 24;
 
 		var stopwatch = Stopwatch.StartNew();
-		var result = _runner.RunParallel<decimal, SkisSandboxStrategyManager>(
+		var result = _runner.RunParallel<decimal[], SkisSandboxStrategyManager>(
 			Pair,
 			start,
 			end,
@@ -82,13 +82,13 @@ public class StrategiesBenchmark4 : BackgroundService
 			(manager, currentPrice, step) =>
 			{
 				// _logger.LogInformation($"[{Pair}] Collecting {(step / 24) + 1}/{totalCollects}...");
-				
-				return manager.Account.CalculateTotalCurrentQuantity(currentPrice);
+				return [manager.Account.CalculateTotalCurrentQuantity(currentPrice), manager.Account.Statistics.Shorts.TotalCount, manager.Account.Statistics.Longs.TotalCount];
+				// return ;
 			}
 		);
 		stopwatch.Stop();
 		_logger.LogInformation(stopwatch.Elapsed.ToString());
-		var best = result.MaxBy(p => p.Value.Average());
+		var best = result.MaxBy(p => p.Value.Average(d => d[0]));
 		_logger.LogInformation(best.Key.Options.ToString());
 		_logger.LogInformation(best.Value.Last().ToString());
 
@@ -100,7 +100,9 @@ public class StrategiesBenchmark4 : BackgroundService
 				EndTime = end.ToString("yyyy-MM-dd"),
 				SaveStepSeconds = DaySteps,
 				Pair = Pair,
-				Values = best.Value,
+				Values = best.Value.Select(d => d[0]),
+				Shorts = best.Value.Select(d => d[1]),
+				Longs = best.Value.Select(d => d[2]),
 				// Starts = starts,
 				// Ends = ends,
 				// DeltaBalances = deltaBalances,
