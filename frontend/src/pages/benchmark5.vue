@@ -54,7 +54,7 @@
 					y: value,
 				})),
 			})))
-			.filter(s => s.data[0].y < s.data[s.data.length - 1].y);
+			// .filter(s => s.data[0].y < s.data[s.data.length - 1].y);
 
 		return result;
 	});
