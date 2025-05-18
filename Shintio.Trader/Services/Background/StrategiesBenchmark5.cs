@@ -69,80 +69,93 @@ public class StrategiesBenchmark5 : BackgroundService
 
 	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 	{
-		var start = new DateTime(2025, 5, 1);
+		var start = new DateTime(2025, 1, 1);
 		var end = new DateTime(2025, 5, 17);
 
 		var bests = new Dictionary<string, IReadOnlyCollection<decimal>>();
 
 		foreach (var pair in Pairs)
 		{
-			var managers = new List<SkisSandboxStrategyManager>();
-
-			for (var dStart = 0.001m; dStart <= 0.1m; dStart += 0.001m)
+			// for (var profitMultiplier = 0.01m; profitMultiplier <= 1m; profitMultiplier += 0.05m)
 			{
-				for (var dEnd = 0.001m; dEnd <= 0.1m; dEnd += 0.001m)
+				var stopwatch = Stopwatch.StartNew();
+
+				// for (var percent = 0.01m; percent <= 0.1m; percent += 0.02m)
 				{
-					var strategy = new SkisSandboxStrategyManager(
-						500,
-						BaseCommissionPercent,
-						new SkisData(Trend.Flat, 0, 0, decimal.MaxValue),
-						new SkisOptions(5m, 10m, dStart, dEnd),
-						1
+					var managers = new List<SkisSandboxStrategyManager>();
+					for (var dStart = 0.001m; dStart <= 0.1m; dStart += 0.005m)
+					{
+						for (var dEnd = 0.001m; dEnd <= 0.1m; dEnd += 0.005m)
+						{
+							var strategy = new SkisSandboxStrategyManager(
+								500,
+								BaseCommissionPercent,
+								new SkisData(Trend.Flat, 0, 0, decimal.MaxValue),
+								new SkisOptions(5m, 10m, dStart, dEnd),
+								1
+							);
+							managers.Add(strategy);
+						}
+					}
+
+					var totalSteps = (int)((end - start).TotalMinutes / TimeSpan.FromHours(1).TotalMinutes);
+					var totalCollects = (int)totalSteps / 24;
+
+					var result = _runner.RunParallel<decimal, SkisSandboxStrategyManager>(
+						pair,
+						start,
+						end,
+						TimeSpan.FromHours(1),
+						24,
+						managers,
+						(manager, currentPrice, step) =>
+						{
+							// _logger.LogInformation($"[{Pair}] Collecting {(step / 24) + 1}/{totalCollects}...");
+							return manager.Account.Balance;
+							// return manager.Account.LastCalculatedBalance;
+							// return
+							// [
+							// 	manager.Account.CalculateTotalCurrentQuantity(currentPrice),
+							// 	// manager.Account.Statistics.Shorts.TotalCount, manager.Account.Statistics.Longs.TotalCount
+							// ];
+							// return ;
+						}
 					);
-					managers.Add(strategy);
+
+					foreach (var (manager, values) in result)
+					{
+						if (values.Last() <= values.First())
+						{
+							continue;
+						}
+
+						bests[$"{pair} : {manager.Options}"] = values;
+					}
+
+					// var best = result.MaxBy(p => p.Value.Last());
+					//
+					// // var best = result.MaxBy(p => p.Value.Average(d => d[0]));
+					// _logger.LogInformation(best.Key.Options.ToString());
+					// _logger.LogInformation(best.Value.Last().ToString());
+					//
+					// bests[$"{pair} : {best.Key.Options}"] = best.Value;
+
+					// var bestIndex = FindMostStableGrowthIndex(result.Values.Select(d => d.ToArray()).ToList(), 10);
+					// if (bestIndex >= 0)
+					// {
+					// 	var best = result.ElementAt(bestIndex);
+					//
+					// 	// var best = result.MaxBy(p => p.Value.Average(d => d[0]));
+					// 	_logger.LogInformation(best.Key.Options.ToString());
+					// 	_logger.LogInformation(best.Value.Last().ToString());
+					//
+					// 	bests[$"{pair} : {best.Key.Options}"] = best.Value;
+					// }
 				}
+
+				stopwatch.Stop();
+				_logger.LogInformation($"[{pair}] Elapsed: {stopwatch.Elapsed}");
 			}
-
-			var totalSteps = (int)((end - start).TotalMinutes / TimeSpan.FromHours(1).TotalMinutes);
-			var totalCollects = (int)totalSteps / 24;
-
-			var stopwatch = Stopwatch.StartNew();
-			var result = _runner.RunParallel<decimal, SkisSandboxStrategyManager>(
-				pair,
-				start,
-				end,
-				TimeSpan.FromHours(1),
-				24,
-				managers,
-				(manager, currentPrice, step) =>
-				{
-					// _logger.LogInformation($"[{Pair}] Collecting {(step / 24) + 1}/{totalCollects}...");
-					return manager.Account.CalculateTotalCurrentQuantity(currentPrice);
-					// return
-					// [
-					// 	manager.Account.CalculateTotalCurrentQuantity(currentPrice),
-					// 	// manager.Account.Statistics.Shorts.TotalCount, manager.Account.Statistics.Longs.TotalCount
-					// ];
-					// return ;
-				}
-			);
-			stopwatch.Stop();
-			_logger.LogInformation(stopwatch.Elapsed.ToString());
-
-			foreach (var (manager, values) in result)
-			{
-				bests[$"{pair} : {manager.Options}"] = values;
-			}
-
-			// var best = result.MaxBy(p => p.Value.Last());
-			//
-			// // var best = result.MaxBy(p => p.Value.Average(d => d[0]));
-			// _logger.LogInformation(best.Key.Options.ToString());
-			// _logger.LogInformation(best.Value.Last().ToString());
-			//
-			// bests[$"{pair} : {best.Key.Options}"] = best.Value;
-			
-			// var bestIndex = FindMostStableGrowthIndex(result.Values.Select(d => d.ToArray()).ToList(), 10);
-			// if (bestIndex >= 0)
-			// {
-			// 	var best = result.ElementAt(bestIndex);
-			//
-			// 	// var best = result.MaxBy(p => p.Value.Average(d => d[0]));
-			// 	_logger.LogInformation(best.Key.Options.ToString());
-			// 	_logger.LogInformation(best.Value.Last().ToString());
-			//
-			// 	bests[$"{pair} : {best.Key.Options}"] = best.Value;
-			// }
 		}
 
 		await File.WriteAllTextAsync(

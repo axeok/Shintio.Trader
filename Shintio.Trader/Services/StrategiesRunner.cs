@@ -21,45 +21,45 @@ public class StrategiesRunner
 		_sandbox = sandbox;
 	}
 
-	public IDictionary<TManager, IReadOnlyCollection<TData>> Run<TData, TManager>(
-		string pair,
-		DateTime start,
-		DateTime end,
-		TimeSpan stepSize,
-		int collectStep,
-		IReadOnlyCollection<TManager> managers,
-		RunCollectResultDelegate<TData, TManager> collectResult
-	)
-		where TManager : IStrategyManager
-	{
-		var totalSteps = (int)((end - start).TotalMinutes / stepSize.TotalMinutes);
-		var result = new Dictionary<TManager, IReadOnlyCollection<TData>>();
-
-		foreach (var manager in managers)
-		{
-			result[manager] = new List<TData>(totalSteps);
-		}
-
-		var step = 0;
-		foreach (var item in GetSteps(pair, start, end, stepSize))
-		{
-			var currentPrice = item.OpenPrice;
-
-			foreach (var manager in managers)
-			{
-				manager.Run(currentPrice, step);
-
-				if (step % collectStep == 0)
-				{
-					((List<TData>)result[manager]).Add(collectResult.Invoke(manager, currentPrice, step));
-				}
-			}
-
-			step++;
-		}
-
-		return result;
-	}
+	// public IDictionary<TManager, IReadOnlyCollection<TData>> Run<TData, TManager>(
+	// 	string pair,
+	// 	DateTime start,
+	// 	DateTime end,
+	// 	TimeSpan stepSize,
+	// 	int collectStep,
+	// 	IReadOnlyCollection<TManager> managers,
+	// 	RunCollectResultDelegate<TData, TManager> collectResult
+	// )
+	// 	where TManager : IStrategyManager
+	// {
+	// 	var totalSteps = (int)((end - start).TotalMinutes / stepSize.TotalMinutes);
+	// 	var result = new Dictionary<TManager, IReadOnlyCollection<TData>>();
+	//
+	// 	foreach (var manager in managers)
+	// 	{
+	// 		result[manager] = new List<TData>(totalSteps);
+	// 	}
+	//
+	// 	var step = 0;
+	// 	foreach (var item in GetSteps(pair, start, end, stepSize))
+	// 	{
+	// 		var currentPrice = item.OpenPrice;
+	//
+	// 		foreach (var manager in managers)
+	// 		{
+	// 			manager.Run(currentPrice, step);
+	//
+	// 			if (step % collectStep == 0)
+	// 			{
+	// 				((List<TData>)result[manager]).Add(collectResult.Invoke(manager, currentPrice, step));
+	// 			}
+	// 		}
+	//
+	// 		step++;
+	// 	}
+	//
+	// 	return result;
+	// }
 
 	public IDictionary<TManager, IReadOnlyCollection<TData>> RunParallel<TData, TManager>(
 		string pair,
@@ -80,35 +80,41 @@ public class StrategiesRunner
 			result[manager] = new List<TData>(totalSteps);
 		}
 
-		var items = GetSteps(pair, start, end, stepSize)
+		var items = GetChunks(pair, start, end, stepSize)
 			.ToArray();
 
-		Parallel.ForEach(managers, (manager) =>
+		foreach (var chunk in managers.Chunk(120))
 		{
-			var step = 0;
-			foreach (var item in items)
+			Parallel.ForEach(chunk, (manager) =>
 			{
-				var currentPrice = item.OpenPrice;
-
-				// if (manager.Account.Balance > 0)
+				var step = 0;
+				foreach (var item in items)
 				{
+					var high = item.Max(i => i.HighPrice);
+					var low = item.Min(i => i.LowPrice);
+					var currentPrice = item.Last().OpenPrice;
+
+					manager.ProcessMarket(high, low);
+					
 					if (manager.Account.CalculateTotalCurrentQuantity(currentPrice) <= 10)
 					{
 						manager.Account.Balance = 0;
 						manager.Account.Orders.Clear();
 					}
-					
+
 					manager.Run(currentPrice, step);
-				}
+						
+					if (step % collectStep == 0)
+					{
+						((List<TData>)result[manager]).Add(collectResult.Invoke(manager, currentPrice, step));
+					}
 
-				if (step % collectStep == 0)
-				{
-					((List<TData>)result[manager]).Add(collectResult.Invoke(manager, currentPrice, step));
+					step++;
 				}
+			});
 
-				step++;
-			}
-		});
+			GC.Collect();
+		}
 
 		return result;
 	}

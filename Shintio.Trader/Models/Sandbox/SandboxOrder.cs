@@ -13,7 +13,7 @@ public record SandboxOrder(
 {
 	public Guid Id { get; init; } = Guid.NewGuid();
 	
-	public decimal TotalQuantity => Quantity * Leverage;
+	public readonly decimal TotalQuantity = Quantity * Leverage;
 
 	public decimal CalculateProfitPercent(decimal currentPrice)
 	{
@@ -43,7 +43,7 @@ public record SandboxOrder(
 		return IsShort
 			? (TakeProfitPrice != null && currentPrice <= TakeProfitPrice) ||
 			  (StopLossPrice != null && currentPrice >= StopLossPrice)
-			: TakeProfitPrice != null && currentPrice >= TakeProfitPrice ||
+			: (TakeProfitPrice != null && currentPrice >= TakeProfitPrice) ||
 			  (StopLossPrice != null && currentPrice <= StopLossPrice);
 	}
 

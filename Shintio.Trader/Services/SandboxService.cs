@@ -1,15 +1,15 @@
-﻿using System.Diagnostics;
-using System.Text.Json;
+﻿using System.Collections.Concurrent;
 using Binance.Net.Enums;
 using Microsoft.Extensions.Logging;
 using Shintio.Trader.Models;
 using Shintio.Trader.Tables;
-using Shintio.Trader.Utils;
 
 namespace Shintio.Trader.Services;
 
 public class SandboxService
 {
+	private ConcurrentDictionary<string, IReadOnlyCollection<KlineItem>> _cache = new();
+	
 	private static readonly string BasePath = "SandboxData";
 	private static readonly string DateFormat = "yyyy.MM";
 
@@ -50,7 +50,7 @@ public class SandboxService
 		if (File.Exists(path))
 		{
 			var data = await LoadItems(path);
-			if (data.Count == minutes)
+			// if (data.Count == minutes)
 			{
 				return data;
 			}
@@ -168,11 +168,16 @@ public class SandboxService
 
 	private async Task<IReadOnlyCollection<KlineItem>> LoadItems(string fileName)
 	{
+		if (_cache.TryGetValue(fileName, out var result))
+		{
+			return result;
+		}
+		
 		var data = await File.ReadAllBytesAsync(fileName);
 
 		var db = new MemoryDatabase(data);
 
-		return db.KlineItemTable.All;
+		return _cache[fileName] = db.KlineItemTable.All;
 	}
 
 	private async Task SaveItems(string fileName, IReadOnlyCollection<KlineItem> items)

@@ -17,6 +17,7 @@ public class TradeAccount
 		_validateBalance = validateBalance;
 	}
 
+	public decimal LastCalculatedBalance { get; private set; } = 0;
 	public decimal InitialBalance { get; }
 	public decimal CommissionPercent { get; }
 	public decimal Balance { get; set; }
@@ -213,7 +214,7 @@ public class TradeAccount
 
 	public decimal CalculateTotalCurrentQuantity(decimal currentPrice)
 	{
-		return Balance + CalculateOrdersCurrentQuantity(currentPrice);
+		return LastCalculatedBalance = Balance + CalculateOrdersCurrentQuantity(currentPrice);
 	}
 
 	// public decimal CalculateFullBalance(decimal currentPrice)

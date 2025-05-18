@@ -1,4 +1,5 @@
-﻿using Shintio.Trader.Interfaces;
+﻿using Shintio.Trader.Enums;
+using Shintio.Trader.Interfaces;
 using Shintio.Trader.Models.Sandbox;
 using Shintio.Trader.Models.Strategies.Skis;
 using Shintio.Trader.Services.Strategies;
@@ -30,6 +31,10 @@ public class SandboxStrategyManager<TStrategy, TData, TOptions, TResult> : IStra
 	public TStrategy Strategy { get; }
 	public TData Data { get; set; }
 	public TOptions Options { get; set; }
+
+	public virtual void ProcessMarket(decimal high, decimal low)
+	{
+	}
 
 	public virtual void Run(decimal currentPrice, int step)
 	{
@@ -78,14 +83,93 @@ public class SkisSandboxStrategyManager(
 	decimal commissionPercent,
 	SkisData initialData,
 	SkisOptions options,
-	int processStep
+	int processStep,
+	decimal stopLossProfitMultiplier = 0.5m,
+	decimal stopLossPercent = 0.02m
 )
 	: SandboxStrategyManager<SkisStrategy, SkisData, SkisOptions, StrategyResult<SkisData>>(initialBalance,
 		commissionPercent,
 		initialData, options)
 {
+	public readonly decimal StopLossProfitMultiplier = stopLossProfitMultiplier;
+	public readonly decimal StopLossPrecent = stopLossPercent;
+
+	public override void ProcessMarket(decimal high, decimal low)
+	{
+		base.ProcessMarket(high, low);
+
+		if (Data.StopLoss == null)
+		{
+			return;
+		}
+
+		if (!(
+			    (Data.Trend == Trend.Up && low <= Data.StopLoss.Value) ||
+			    (Data.Trend == Trend.Down && high >= Data.StopLoss.Value)
+		    ))
+		{
+			return;
+		}
+		
+		foreach (var order in Account.Orders.ToArray())
+		{
+			Account.CloseOrder(order, Data.StopLoss.Value);
+		}
+
+		Data = SkisData.CreateDefault();
+	}
+
+	public override void ProcessResult(StrategyResult<SkisData> result, decimal currentPrice, int step)
+	{
+		base.ProcessResult(result, currentPrice, step);
+
+		if (Data.Trend == Trend.Up)
+		{
+			var orders = Account.Longs.ToArray();
+
+			var ordersSpentValue = orders.Sum(o => o.Quantity);
+			var profit = orders.Sum(o => o.CalculateProfitQuantity(currentPrice));
+
+			if (profit >= ordersSpentValue * StopLossProfitMultiplier)
+			{
+				var stopLoss = currentPrice * 0.9m;
+
+				if (Data.StopLoss == null || stopLoss > Data.StopLoss)
+				{
+					Data = Data with { StopLoss = stopLoss };
+				}
+
+				// Console.WriteLine($"Set longs stop loss: {stopLoss}");
+			}
+		}
+		else if (Data.Trend == Trend.Down)
+		{
+			var orders = Account.Shorts.ToArray();
+
+			var ordersSpentValue = orders.Sum(o => o.Quantity);
+			var profit = orders.Sum(o => o.CalculateProfitQuantity(currentPrice));
+
+			if (profit >= ordersSpentValue * StopLossProfitMultiplier)
+			{
+				var stopLoss = currentPrice * 1.1m;
+
+				if (Data.StopLoss == null || stopLoss < Data.StopLoss)
+				{
+					Data = Data with { StopLoss = stopLoss };
+				}
+
+				// Console.WriteLine($"Set shorts stop loss: {stopLoss}");
+			}
+		}
+	}
+
 	protected override bool NeedToProcessOrders(int step)
 	{
 		return step % processStep == 0;
+	}
+
+	private static bool NeedToCloseStopLoss(bool isShort, decimal stopLoss, decimal high, decimal low)
+	{
+		return isShort ? high >= stopLoss : low <= stopLoss;
 	}
 }
