@@ -56,13 +56,13 @@ public class TraderService : BackgroundService
 		_binanceClient = binanceClient;
 
 		_traderConfig = traderConfig.Value;
-		
+
 		var now = DateTime.UtcNow;
 		var nextHour = now.AddHours(1);
 		var nextAligned = new DateTime(nextHour.Year, nextHour.Month, nextHour.Day, nextHour.Hour, 15, 0);
 
 		var delay = nextAligned - now;
-		
+
 		_timer = new Timer();
 		_timer.Interval = delay.TotalMilliseconds;
 		_timer.AutoReset = true;
@@ -82,7 +82,7 @@ public class TraderService : BackgroundService
 			receiverOptions: receiverOptions,
 			cancellationToken: cancellationToken
 		);
-		
+
 		_timer.Start();
 
 		return base.StartAsync(cancellationToken);
@@ -108,7 +108,7 @@ public class TraderService : BackgroundService
 				await BotLog($"{pair}: {exception.Message}");
 			}
 		}
-		
+
 		await LogBalance();
 	}
 
@@ -120,13 +120,14 @@ public class TraderService : BackgroundService
 		var data = GetOrCreateData(pair);
 		var options = GetOrCreateOptions(pair);
 
-		var (newData, orders, closeLongs, closeShorts) = SkisTradeStrategy.Run(currentPrice, usdt - ReservedBalance, data, options);
+		var (newData, orders, closeLongs, closeShorts) =
+			SkisTradeStrategy.Run(currentPrice, usdt - ReservedBalance, data, options);
 
 		var report = new StringBuilder();
 
 		report.AppendLine($"[{pair}] https://www.binance.com/futures/{pair}");
 		report.AppendLine();
-		
+
 		report.AppendLine(Invariant($"Свободный баланс: {usdt - ReservedBalance:F2} ({usdt:F2}) USDT"));
 		report.AppendLine(Invariant($"Текущая цена: {currentPrice:F6} {pair}"));
 		report.AppendLine($"Старые параметры: {FormatData(data)}");
@@ -143,7 +144,7 @@ public class TraderService : BackgroundService
 		}
 
 		report.AppendLine();
-		
+
 		SaveData(newData, pair);
 
 		if (closeLongs)
@@ -155,32 +156,42 @@ public class TraderService : BackgroundService
 		{
 			report.AppendLine(await BinanceHelper.CloseAllShorts(_binanceClient, pair));
 		}
-		
+
 		var exchangeInfo = await _binanceClient.UsdFuturesApi.ExchangeData.GetExchangeInfoAsync();
 		var symbolInfo = exchangeInfo.Data.Symbols.First(s => s.Name == pair);
 		var quantityPrecision = symbolInfo.QuantityPrecision;
 
 		foreach (var order in orders)
 		{
-			report.AppendLine(await BinanceHelper.TryPlaceOrder(_binanceClient, pair, currentPrice, quantityPrecision, order));
+			report.AppendLine(await BinanceHelper.TryPlaceOrder(_binanceClient, pair, currentPrice, quantityPrecision,
+				order));
 		}
 
 		await BotLog(report.ToString());
 	}
 
-	private async Task SellAll(string pair)
+	private async Task CloseOrders(string pair)
 	{
-		var reports = new List<string>();
+		var currentPrice = (await _binanceClient.UsdFuturesApi.ExchangeData.GetMarkPriceAsync(pair)).Data.MarkPrice;
+		var orders = await BinanceHelper.FetchOrdersPnl(_binanceClient, [pair]);
 
-		reports.Add(await BinanceHelper.CloseAllLongs(_binanceClient, pair));
-		reports.Add(await BinanceHelper.CloseAllShorts(_binanceClient, pair));
+		var result = orders.Select(p => Invariant($"[{p.Key}]: {p.Value:F2}"));
 
-		foreach (var message in reports)
-		{
-			await BotLog(message);
-		}
+		var report = new StringBuilder();
 
-		await LogBalance();
+		report.AppendLine(Invariant($"Текущая цена: {currentPrice:F6} {pair}"));
+		report.AppendLine(string.Join("\n", result));
+
+		report.AppendLine(await BinanceHelper.CloseAllLongs(_binanceClient, pair));
+		report.AppendLine(await BinanceHelper.CloseAllShorts(_binanceClient, pair));
+
+		await BotLog(report.ToString());
+	}
+
+	private async Task ResetStrategy(string pair)
+	{
+		SaveData(GetDefaultData(), pair);
+		await LogParameters(pair);
 	}
 
 	private async Task LogBalance()
@@ -203,7 +214,7 @@ public class TraderService : BackgroundService
 	{
 		var data = GetOrCreateData(pair);
 		var options = GetOrCreateOptions(pair);
-		
+
 		var result = new StringBuilder();
 
 		result.AppendLine(pair);
@@ -245,7 +256,7 @@ public class TraderService : BackgroundService
 		{
 			return;
 		}
-		
+
 		var split = message.Text.Split(' ');
 		var command = split[0];
 		var pair = split.Length < 2 ? null : split[1];
@@ -271,9 +282,6 @@ public class TraderService : BackgroundService
 			case "/parameters" when await ValidatePair(pair):
 				await LogParameters(pair!);
 				break;
-			case "/sell" when await ValidatePair(pair):
-				await SellAll(pair!);
-				break;
 			case "/run" when await ValidatePair(pair):
 				await RunStrategy(pair!);
 				break;
@@ -281,6 +289,29 @@ public class TraderService : BackgroundService
 				foreach (var p in Pairs)
 				{
 					await RunStrategy(p);
+				}
+
+				break;
+			case "/close" when await ValidatePair(pair):
+				await CloseOrders(pair!);
+				await LogBalance();
+				break;
+			case "/close_all":
+				foreach (var p in Pairs)
+				{
+					await CloseOrders(p);
+				}
+
+				await LogBalance();
+
+				break;
+			case "/reset" when await ValidatePair(pair):
+				await ResetStrategy(pair!);
+				break;
+			case "/reset_all":
+				foreach (var p in Pairs)
+				{
+					await ResetStrategy(p);
 				}
 
 				break;
@@ -298,7 +329,7 @@ public class TraderService : BackgroundService
 
 		return false;
 	}
-	
+
 	private Task HandleErrorAsync(
 		ITelegramBotClient botClient,
 		Exception exception,
@@ -324,7 +355,8 @@ public class TraderService : BackgroundService
 
 	private string FormatOptions(SkisOptions options)
 	{
-		return Invariant($"{options.Quantity} | {options.Leverage} | Start {options.StartDelta:F4} | Stop {options.StopDelta:F4}");
+		return Invariant(
+			$"{options.Quantity} | {options.Leverage} | Start {options.StartDelta:F4} | Stop {options.StopDelta:F4}");
 	}
 
 	private SkisData GetOrCreateData(string pair)
@@ -332,7 +364,7 @@ public class TraderService : BackgroundService
 		var path = GetDataPath(pair);
 		if (!File.Exists(path))
 		{
-			return new SkisData(Trend.Flat, 0, 0, decimal.MaxValue);
+			return GetDefaultData();
 		}
 
 		return JsonSerializer.Deserialize<SkisData>(File.ReadAllText(path))!;
@@ -367,5 +399,10 @@ public class TraderService : BackgroundService
 	private string GetOptionsPath(string pair)
 	{
 		return $"skis-options-{pair}.json";
+	}
+
+	private SkisData GetDefaultData()
+	{
+		return new SkisData(Trend.Flat, 0, 0, decimal.MaxValue);
 	}
 }
