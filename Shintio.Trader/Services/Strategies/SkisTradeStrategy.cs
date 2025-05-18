@@ -73,7 +73,7 @@ public static class SkisTradeStrategy
 			QuantityMultiplier.HighQuad => quantity + ((trendSteps / 10m) * (trendSteps / 10m)),
 		};
 
-		var leverage = Math.Clamp(Math.Floor(options.Leverage + (balance / 100)), 10, 75);
+		var leverage = Math.Clamp(Math.Floor(options.Leverage + (balance / 200)), 10, 75);
 
 		var orders = new List<StrategyOrder>();
 
