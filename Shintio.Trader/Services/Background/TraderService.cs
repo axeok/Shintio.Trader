@@ -486,7 +486,7 @@ public class TraderService : BackgroundService
 
 	private SkisData GetDefaultData()
 	{
-		return new SkisData(Trend.Flat, 0, 0, decimal.MaxValue);
+		return SkisData.CreateDefault();
 	}
 
 	private static decimal CalculateStopLossPrice(bool isShort, decimal breakEvenPrice, decimal currentPrice)
