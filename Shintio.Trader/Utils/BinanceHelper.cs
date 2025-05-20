@@ -227,6 +227,6 @@ public static class BinanceHelper
 			return $"[{pair}] Ошибка установки нового стоп-лосса: {newStopLoss.Error}";
 		}
 
-		return Invariant($"[{pair}] Стоп-лосс установлен {stopLoss?.StopPrice:F4} -> {newStopLossPrice:F4}");
+		return Invariant($"[{pair}] Стоп-лосс установлен {stopLoss?.StopPrice ?? 0:F4} -> {newStopLossPrice:F4}");
 	}
 }

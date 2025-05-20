@@ -201,7 +201,7 @@ public class TraderService : BackgroundService
 		var data = GetOrCreateData(pair);
 		if (data.Trend == Trend.Flat)
 		{
-			await BotLog("Тренд плоский");
+			await BotLog($"[{pair}] Тренд плоский");
 			return;
 		}
 		
