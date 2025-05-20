@@ -95,8 +95,11 @@ public class StrategiesRunner
 					var currentPrice = item.Last().OpenPrice;
 
 					manager.ProcessMarket(high, low);
-					
-					if (manager.Account.CalculateTotalCurrentQuantity(currentPrice) <= 10)
+
+					if (
+						manager.Account.Balance < 0 ||
+						manager.Account.CalculateTotalCurrentQuantity(currentPrice) <= 10
+					)
 					{
 						manager.Account.Balance = 0;
 						manager.Account.Orders.Clear();
