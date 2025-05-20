@@ -117,15 +117,17 @@ public class TraderService : BackgroundService
 	private async Task RunStrategy(string pair)
 	{
 		var (usdt, ordersBalance, _) = await BinanceHelper.FetchBalances(_binanceClient);
-		if (ordersBalance == 0)
-		{
-			await BotLog($"{pair} Тренд закрылся по стоп лоссу, обнуление...");
-			SaveData(GetDefaultData(), pair);
-		}
 		
 		var currentPrice = (await _binanceClient.UsdFuturesApi.ExchangeData.GetMarkPriceAsync(pair)).Data.MarkPrice;
 
 		var data = GetOrCreateData(pair);
+		if (data.Trend != Trend.Flat && ordersBalance == 0)
+		{
+			await BotLog($"{pair} Тренд закрылся по стоп лоссу, обнуление...");
+			SaveData(GetDefaultData(), pair);
+			data = GetOrCreateData(pair);
+		}
+		
 		var options = GetOrCreateOptions(pair);
 
 		var (newData, orders, closeLongs, closeShorts) =
