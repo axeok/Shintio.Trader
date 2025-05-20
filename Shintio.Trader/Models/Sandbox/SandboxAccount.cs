@@ -217,6 +217,35 @@ public class TradeAccount
 		return LastCalculatedBalance = Balance + CalculateOrdersCurrentQuantity(currentPrice);
 	}
 
+	public decimal GetBreakEvenPriceForOrders(IReadOnlyCollection<SandboxOrder> orders)
+	{
+		var totalQuantityWithLeverage = 0m;
+		var weightedSum = 0m;
+		var totalCommission = 0m;
+
+		foreach (var order in orders)
+		{
+			var quantityWithLeverage = order.Quantity * order.Leverage;
+			totalQuantityWithLeverage += quantityWithLeverage;
+			weightedSum += order.Price * quantityWithLeverage;
+			totalCommission += order.TotalQuantity * 2 * CommissionPercent * order.Leverage;
+		}
+
+		if (totalQuantityWithLeverage == 0)
+		{
+			return 0;
+		}
+
+		var isShort = orders.FirstOrDefault()?.IsShort ?? false;
+		var avgPrice = weightedSum / totalQuantityWithLeverage;
+
+		var breakEvenPrice = isShort
+			? avgPrice + (totalCommission / totalQuantityWithLeverage)
+			: avgPrice - (totalCommission / totalQuantityWithLeverage);
+
+		return breakEvenPrice;
+	}
+
 	// public decimal CalculateFullBalance(decimal currentPrice)
 	// {
 	// 	return ReservedBalance + CalculateTotalCurrentQuantity(currentPrice);

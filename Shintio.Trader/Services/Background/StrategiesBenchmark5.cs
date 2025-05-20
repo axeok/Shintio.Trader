@@ -69,7 +69,7 @@ public class StrategiesBenchmark5 : BackgroundService
 
 	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 	{
-		var start = new DateTime(2025, 1, 1);
+		var start = new DateTime(2025, 5, 10);
 		var end = new DateTime(2025, 5, 17);
 
 		var bests = new Dictionary<string, IReadOnlyCollection<decimal>>();
@@ -83,16 +83,19 @@ public class StrategiesBenchmark5 : BackgroundService
 				// for (var percent = 0.01m; percent <= 0.1m; percent += 0.02m)
 				{
 					var managers = new List<SkisSandboxStrategyManager>();
+					// var (dStart, dEnd) = (0.015m, 0.03m);
 					for (var dStart = 0.001m; dStart <= 0.1m; dStart += 0.005m)
 					{
 						for (var dEnd = 0.001m; dEnd <= 0.1m; dEnd += 0.005m)
 						{
 							var strategy = new SkisSandboxStrategyManager(
-								500,
+								2000,
 								BaseCommissionPercent,
 								new SkisData(Trend.Flat, 0, 0, decimal.MaxValue),
-								new SkisOptions(5m, 10m, dStart, dEnd),
-								1
+								new SkisOptions(10m, 10m, dStart, dEnd),
+								1,
+								50,
+								0.7m
 							);
 							managers.Add(strategy);
 						}
@@ -111,7 +114,9 @@ public class StrategiesBenchmark5 : BackgroundService
 						(manager, currentPrice, step) =>
 						{
 							// _logger.LogInformation($"[{Pair}] Collecting {(step / 24) + 1}/{totalCollects}...");
-							return manager.Account.Balance;
+							// return (decimal)manager.Data.TrendSteps;
+							// return manager.Account.Balance;
+							return manager.Account.CalculateTotalCurrentQuantity(currentPrice);
 							// return manager.Account.LastCalculatedBalance;
 							// return
 							// [
