@@ -35,7 +35,7 @@ public class TraderService : BackgroundService
 	];
 
 	private static readonly decimal ReservedBalance = 900;
-	private static readonly decimal StopLossProfitMultiplier = 0.7m;
+	private static readonly decimal StopLossProfitMultiplier = 0.8m;
 
 	private readonly ILogger<TraderService> _logger;
 	private readonly ITelegramBotClient _bot;
@@ -224,8 +224,8 @@ public class TraderService : BackgroundService
 
 			if (currentPrice > breakEvenPrice)
 			{
-				await BinanceHelper.SetStopLoss(_binanceClient, pair,
-					CalculateStopLossPrice(false, breakEvenPrice, currentPrice));
+				await BotLog(await BinanceHelper.SetStopLoss(_binanceClient, pair,
+					CalculateStopLossPrice(false, breakEvenPrice, currentPrice)));
 			}
 		}
 		else if (data.Trend == Trend.Down)
@@ -240,8 +240,8 @@ public class TraderService : BackgroundService
 
 			if (currentPrice < breakEvenPrice)
 			{
-				await BinanceHelper.SetStopLoss(_binanceClient, pair,
-					CalculateStopLossPrice(true, breakEvenPrice, currentPrice));
+				await BotLog(await BinanceHelper.SetStopLoss(_binanceClient, pair,
+					CalculateStopLossPrice(true, breakEvenPrice, currentPrice)));
 			}
 		}
 	}
