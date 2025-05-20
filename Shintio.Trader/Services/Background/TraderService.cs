@@ -1,13 +1,13 @@
 ﻿using System.Text;
 using System.Text.Json;
 using System.Timers;
+using Binance.Net.Enums;
 using Binance.Net.Interfaces.Clients;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Shintio.Trader.Configuration;
 using Shintio.Trader.Enums;
-using Shintio.Trader.Models;
 using Shintio.Trader.Models.Strategies.Skis;
 using Shintio.Trader.Services.Strategies;
 using Shintio.Trader.Utils;
@@ -35,6 +35,7 @@ public class TraderService : BackgroundService
 	];
 
 	private static readonly decimal ReservedBalance = 900;
+	private static readonly decimal StopLossProfitMultiplier = 0.7m;
 
 	private readonly ILogger<TraderService> _logger;
 	private readonly ITelegramBotClient _bot;
@@ -194,6 +195,56 @@ public class TraderService : BackgroundService
 		await LogParameters(pair);
 	}
 
+	private async Task UpdateStopLoss(string pair)
+	{
+		var data = GetOrCreateData(pair);
+		if (data.Trend == Trend.Flat)
+		{
+			await BotLog("Тренд плоский");
+			return;
+		}
+		
+		var positions = await _binanceClient.UsdFuturesApi.Account.GetPositionInformationAsync(pair);
+		if (!positions.Success)
+		{
+			await BotLog($"Ошибка получения информации о позициях: {positions.Error}");
+			return;
+		}
+
+		if (data.Trend == Trend.Up)
+		{
+			var longPositions = positions.Data
+				.Where(p => p.PositionSide == PositionSide.Long && p.Quantity != 0)
+				.ToList();
+			
+			var currentPrice = (await _binanceClient.UsdFuturesApi.ExchangeData.GetMarkPriceAsync(pair)).Data.MarkPrice;
+			
+			var breakEvenPrice = longPositions.Average(p => p.BreakEvenPrice);
+
+			if (currentPrice > breakEvenPrice)
+			{
+				await BinanceHelper.SetStopLoss(_binanceClient, pair,
+					CalculateStopLossPrice(false, breakEvenPrice, currentPrice));
+			}
+		}
+		else if (data.Trend == Trend.Down)
+		{
+			var shortsPositions = positions.Data
+				.Where(p => p.PositionSide == PositionSide.Short && p.Quantity != 0)
+				.ToList();
+			
+			var currentPrice = (await _binanceClient.UsdFuturesApi.ExchangeData.GetMarkPriceAsync(pair)).Data.MarkPrice;
+			
+			var breakEvenPrice = shortsPositions.Average(p => p.BreakEvenPrice);
+
+			if (currentPrice < breakEvenPrice)
+			{
+				await BinanceHelper.SetStopLoss(_binanceClient, pair,
+					CalculateStopLossPrice(true, breakEvenPrice, currentPrice));
+			}
+		}
+	}
+
 	private async Task LogBalance()
 	{
 		var (usdt, orders, bnb) = await BinanceHelper.FetchBalances(_binanceClient);
@@ -315,6 +366,16 @@ public class TraderService : BackgroundService
 				}
 
 				break;
+			case "/update_sl" when await ValidatePair(pair):
+				await UpdateStopLoss(pair!);
+				break;
+			case "/update_sl_all":
+				foreach (var p in Pairs)
+				{
+					await UpdateStopLoss(p);
+				}
+
+				break;
 		}
 	}
 
@@ -404,5 +465,12 @@ public class TraderService : BackgroundService
 	private SkisData GetDefaultData()
 	{
 		return new SkisData(Trend.Flat, 0, 0, decimal.MaxValue);
+	}
+
+	private static decimal CalculateStopLossPrice(bool isShort, decimal breakEvenPrice, decimal currentPrice)
+	{
+		return isShort
+			? breakEvenPrice - (breakEvenPrice - currentPrice) * StopLossProfitMultiplier
+			: breakEvenPrice + (currentPrice - breakEvenPrice) * StopLossProfitMultiplier;
 	}
 }

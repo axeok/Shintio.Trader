@@ -1,6 +1,7 @@
 ﻿using Binance.Net.Enums;
 using Binance.Net.Interfaces.Clients;
 using Shintio.Trader.Models;
+using static System.FormattableString;
 
 namespace Shintio.Trader.Utils;
 
@@ -172,5 +173,60 @@ public static class BinanceHelper
 		return orderResult.Success
 			? $"Закрыл лонгов на сумму {totalQuantity:F4}. Профит: {totalProfit:F2} USDT"
 			: $"Ошибка закрытия лонг позиций: {orderResult.Error}";
+	}
+
+	public static async Task<string> SetStopLoss(IBinanceRestClient binanceClient, string pair, decimal price)
+	{
+		var positions = await binanceClient.UsdFuturesApi.Account.GetPositionInformationAsync(pair);
+		if (!positions.Success)
+		{
+			return $"[{pair}] Ошибка получения позиции: {positions.Error}";
+		}
+
+		var position = positions.Data.FirstOrDefault(p => p.Quantity != 0);
+		if (position == null)
+		{
+			return $"[{pair}] Нет открытой позиции";
+		}
+
+		var openOrders = await binanceClient.UsdFuturesApi.Trading.GetOpenOrdersAsync(pair);
+		if (!openOrders.Success)
+		{
+			return $"[{pair}] Ошибка получения ордеров: {openOrders.Error}";
+		}
+
+		var stopLoss = openOrders.Data.FirstOrDefault(o => o.Type == FuturesOrderType.StopMarket);
+		if (stopLoss != null)
+		{
+			var cancelResult = await binanceClient.UsdFuturesApi.Trading.CancelOrderAsync(pair, stopLoss.Id);
+			if (!cancelResult.Success)
+			{
+				return $"[{pair}] Ошибка отмены стоп-лосса: {cancelResult.Error}";
+			}
+		}
+
+		var exchangeInfo = await binanceClient.UsdFuturesApi.ExchangeData.GetExchangeInfoAsync();
+		var symbolInfo = exchangeInfo.Data.Symbols.First(s => s.Name == pair);
+		var pricePrecision = symbolInfo.PricePrecision;
+
+		var newStopLossPrice = Math.Round(price, pricePrecision);
+		var orderSide = position.PositionSide == PositionSide.Long ? OrderSide.Sell : OrderSide.Buy;
+
+		var newStopLoss = await binanceClient.UsdFuturesApi.Trading.PlaceOrderAsync(
+			pair,
+			orderSide,
+			FuturesOrderType.StopMarket,
+			Math.Abs(position.Quantity),
+			stopPrice: newStopLossPrice,
+			positionSide: position.PositionSide,
+			closePosition: true
+		);
+
+		if (!newStopLoss.Success)
+		{
+			return $"[{pair}] Ошибка установки нового стоп-лосса: {newStopLoss.Error}";
+		}
+
+		return Invariant($"[{pair}] Стоп-лосс установлен {stopLoss?.StopPrice:F4} -> {newStopLossPrice:F4}");
 	}
 }
