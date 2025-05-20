@@ -123,7 +123,7 @@ public class TraderService : BackgroundService
 		var data = GetOrCreateData(pair);
 		if (data.Trend != Trend.Flat && ordersBalance == 0)
 		{
-			await BotLog($"{pair} Тренд закрылся по стоп лоссу, обнуление...");
+			await BotLog($"[{pair}] Тренд закрылся по стоп лоссу, обнуление...");
 			SaveData(GetDefaultData(), pair);
 			data = GetOrCreateData(pair);
 		}
