@@ -102,8 +102,8 @@ public class TraderService : BackgroundService
 		{
 			try
 			{
-				await RunStrategy(pair);
 				await UpdateStopLoss(pair);
+				await RunStrategy(pair);
 			}
 			catch (Exception exception)
 			{
