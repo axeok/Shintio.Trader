@@ -35,6 +35,7 @@ public class TraderService : BackgroundService
 	];
 
 	private static readonly decimal ReservedBalance = 900;
+	private static readonly decimal StopLossMinUnrealizedPnl = 30m;
 	private static readonly decimal StopLossProfitMultiplier = 0.8m;
 
 	private readonly ILogger<TraderService> _logger;
@@ -225,15 +226,21 @@ public class TraderService : BackgroundService
 			var longPositions = positions.Data
 				.Where(p => p.PositionSide == PositionSide.Long && p.Quantity != 0)
 				.ToList();
-			
-			var currentPrice = (await _binanceClient.UsdFuturesApi.ExchangeData.GetMarkPriceAsync(pair)).Data.MarkPrice;
-			
-			var breakEvenPrice = longPositions.Average(p => p.BreakEvenPrice);
+			var unrealizedPnl = longPositions.Sum(p => p.UnrealizedPnl);
 
-			if (currentPrice > breakEvenPrice)
+			if (unrealizedPnl >= StopLossMinUnrealizedPnl)
 			{
+				var currentPrice = (await _binanceClient.UsdFuturesApi.ExchangeData.GetMarkPriceAsync(pair)).Data
+					.MarkPrice;
+				var breakEvenPrice = longPositions.Average(p => p.BreakEvenPrice);
+
 				await BotLog(await BinanceHelper.SetStopLoss(_binanceClient, pair,
 					CalculateStopLossPrice(false, breakEvenPrice, currentPrice)));
+			}
+			else
+			{
+				await BotLog(Invariant(
+					$"[{pair}] Недостаточно PnL для установки Stop Loss: {unrealizedPnl:F2}/{StopLossMinUnrealizedPnl:F2}"));
 			}
 		}
 		else if (data.Trend == Trend.Down)
@@ -241,15 +248,21 @@ public class TraderService : BackgroundService
 			var shortsPositions = positions.Data
 				.Where(p => p.PositionSide == PositionSide.Short && p.Quantity != 0)
 				.ToList();
-			
-			var currentPrice = (await _binanceClient.UsdFuturesApi.ExchangeData.GetMarkPriceAsync(pair)).Data.MarkPrice;
-			
-			var breakEvenPrice = shortsPositions.Average(p => p.BreakEvenPrice);
+			var unrealizedPnl = shortsPositions.Sum(p => p.UnrealizedPnl);
 
-			if (currentPrice < breakEvenPrice)
+			if (unrealizedPnl >= StopLossMinUnrealizedPnl)
 			{
+				var currentPrice = (await _binanceClient.UsdFuturesApi.ExchangeData.GetMarkPriceAsync(pair)).Data
+					.MarkPrice;
+				var breakEvenPrice = shortsPositions.Average(p => p.BreakEvenPrice);
+
 				await BotLog(await BinanceHelper.SetStopLoss(_binanceClient, pair,
 					CalculateStopLossPrice(true, breakEvenPrice, currentPrice)));
+			}
+			else
+			{
+				await BotLog(Invariant(
+					$"[{pair}] Недостаточно PnL для установки Stop Loss: {unrealizedPnl:F2}/{StopLossMinUnrealizedPnl:F2}"));
 			}
 		}
 	}
