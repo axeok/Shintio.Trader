@@ -85,7 +85,7 @@ public class TraderService : BackgroundService
 			cancellationToken: cancellationToken
 		);
 
-		// _timer.Start();
+		_timer.Start();
 
 		return base.StartAsync(cancellationToken);
 	}
