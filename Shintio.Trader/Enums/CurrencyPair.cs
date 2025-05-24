@@ -21,4 +21,5 @@ public static class CurrencyPair
     public static string PEPE_USDT = "PEPEUSDT";
     public static string _1000PEPE_USDT = "1000PEPEUSDT";
     public static string WIF_USDT = "WIFUSDT";
+    public static string PNUT_USDT = "PNUTUSDT";
 }

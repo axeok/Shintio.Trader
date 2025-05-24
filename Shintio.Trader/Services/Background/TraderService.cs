@@ -32,6 +32,7 @@ public class TraderService : BackgroundService
 		CurrencyPair.WIF_USDT,
 		CurrencyPair.ETH_USDT,
 		CurrencyPair.NEAR_USDT,
+		CurrencyPair.PNUT_USDT,
 	];
 
 	private static readonly decimal ReservedBalance = 900;
