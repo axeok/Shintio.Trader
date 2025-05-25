@@ -142,7 +142,7 @@ public class TraderService : BackgroundService
 
 		var report = new StringBuilder();
 
-		report.AppendLine($"[{pair}] https://www.binance.com/futures/{pair}");
+		// report.AppendLine($"[{pair}] https://www.binance.com/futures/{pair}");
 		report.AppendLine();
 
 		report.AppendLine(Invariant($"Свободный баланс: {usdt - ReservedBalance:F2} ({usdt:F2}) USDT"));
