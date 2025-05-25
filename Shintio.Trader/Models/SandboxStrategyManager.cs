@@ -83,14 +83,15 @@ public class SkisSandboxStrategyManager(
 	decimal commissionPercent,
 	SkisData initialData,
 	SkisOptions options,
-	int processStep,
-	decimal stopLossMinUnrealizedPnl = 30m,
-	decimal stopLossProfitMultiplier = 0.8m
+	int processStep
 )
 	: SandboxStrategyManager<SkisStrategy, SkisData, SkisOptions, StrategyResult<SkisData>>(initialBalance,
 		commissionPercent,
 		initialData, options)
 {
+	private (decimal min, decimal max) _stopLossMinUnrealizedPnl = (40m, 200m);
+	private (decimal min, decimal max) _stopLossProfitMultiplier = (0.3m, 0.9m);
+	
 	public override void ProcessMarket(decimal high, decimal low)
 	{
 		base.ProcessMarket(high, low);
@@ -125,11 +126,18 @@ public class SkisSandboxStrategyManager(
 			var orders = Account.Longs.ToArray();
 
 			var unrealizedPnl = orders.Sum(o => o.CalculateProfitQuantity(currentPrice));
-			if (unrealizedPnl >= stopLossMinUnrealizedPnl)
+			if (unrealizedPnl >= _stopLossMinUnrealizedPnl.min)
 			{
+				var multiplier = Map(
+					unrealizedPnl,
+					_stopLossMinUnrealizedPnl.min, _stopLossMinUnrealizedPnl.max,
+					_stopLossProfitMultiplier.min, _stopLossProfitMultiplier.max
+				);
+				// multiplier = 0.8m;
+				
 				var breakEvenPrice = Account.GetBreakEvenPriceForOrders(orders);
 
-				Data = Data with { StopLoss = CalculateStopLossPrice(false, breakEvenPrice, currentPrice) };
+				Data = Data with { StopLoss = CalculateStopLossPrice(false, breakEvenPrice, currentPrice, multiplier) };
 			}
 		}
 		else if (Data.Trend == Trend.Down)
@@ -137,11 +145,18 @@ public class SkisSandboxStrategyManager(
 			var orders = Account.Shorts.ToArray();
 
 			var unrealizedPnl = orders.Sum(o => o.CalculateProfitQuantity(currentPrice));
-			if (unrealizedPnl >= stopLossMinUnrealizedPnl)
+			if (unrealizedPnl >= _stopLossMinUnrealizedPnl.min)
 			{
+				var multiplier = Map(
+					unrealizedPnl,
+					_stopLossMinUnrealizedPnl.min, _stopLossMinUnrealizedPnl.max,
+					_stopLossProfitMultiplier.min, _stopLossProfitMultiplier.max
+				);
+				// multiplier = 0.8m;
+				
 				var breakEvenPrice = Account.GetBreakEvenPriceForOrders(orders);
 
-				Data = Data with { StopLoss = CalculateStopLossPrice(true, breakEvenPrice, currentPrice) };
+				Data = Data with { StopLoss = CalculateStopLossPrice(true, breakEvenPrice, currentPrice, multiplier) };
 			}
 		}
 	}
@@ -155,11 +170,31 @@ public class SkisSandboxStrategyManager(
 	{
 		return isShort ? high >= stopLoss : low <= stopLoss;
 	}
-
-	private decimal CalculateStopLossPrice(bool isShort, decimal breakEvenPrice, decimal currentPrice)
+	
+	private static decimal CalculateStopLossPrice(
+		bool isShort,
+		decimal breakEvenPrice,
+		decimal currentPrice,
+		decimal multiplier
+	)
 	{
 		return isShort
-			? breakEvenPrice - (breakEvenPrice - currentPrice) * stopLossProfitMultiplier
-			: breakEvenPrice + (currentPrice - breakEvenPrice) * stopLossProfitMultiplier;
+			? breakEvenPrice - (breakEvenPrice - currentPrice) * multiplier
+			: breakEvenPrice + (currentPrice - breakEvenPrice) * multiplier;
+	}
+
+	private static decimal Map(
+		decimal value,
+		decimal fromSource,
+		decimal toSource,
+		decimal fromTarget,
+		decimal toTarget
+	)
+	{
+		return Math.Clamp(
+			(value - fromSource) / (toSource - fromSource) * (toTarget - fromTarget) + fromTarget,
+			fromTarget,
+			toTarget
+		);
 	}
 }
