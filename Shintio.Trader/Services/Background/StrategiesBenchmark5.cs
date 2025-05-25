@@ -24,7 +24,7 @@ public class StrategiesBenchmark5 : BackgroundService
 		// CurrencyPair.SOL_USDT,
 		// CurrencyPair.BTC_USDT,
 		// CurrencyPair.XRP_USDT,
-		CurrencyPair.DOGE_USDT,
+		// CurrencyPair.DOGE_USDT,
 		// CurrencyPair.NEAR_USDT,
 		// CurrencyPair.LISTA_USDT,
 		// CurrencyPair.OM_USDT,
@@ -34,7 +34,7 @@ public class StrategiesBenchmark5 : BackgroundService
 		// CurrencyPair.TRX_USDT,
 		// CurrencyPair.LTC_USDT,
 		// CurrencyPair.LINK_USDT,
-		// CurrencyPair.NEAR_USDT,
+		CurrencyPair.NEAR_USDT,
 		// CurrencyPair.BCH_USDT,
 		// CurrencyPair.FIL_USDT,
 		// CurrencyPair.PEPE_USDT,
@@ -69,8 +69,8 @@ public class StrategiesBenchmark5 : BackgroundService
 
 	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 	{
-		var start = new DateTime(2025, 5, 10);
-		var end = new DateTime(2025, 5, 17);
+		var start = new DateTime(2025, 1, 15);
+		var end = new DateTime(2025, 5, 24);
 
 		var bests = new Dictionary<string, IReadOnlyCollection<decimal>>();
 
@@ -83,19 +83,17 @@ public class StrategiesBenchmark5 : BackgroundService
 				// for (var percent = 0.01m; percent <= 0.1m; percent += 0.02m)
 				{
 					var managers = new List<SkisSandboxStrategyManager>();
-					// var (dStart, dEnd) = (0.015m, 0.03m);
-					for (var dStart = 0.001m; dStart <= 0.1m; dStart += 0.005m)
+					var (dStart, dEnd) = (0.066m, 0.091m);
+					// for (var dStart = 0.001m; dStart <= 0.1m; dStart += 0.005m)
 					{
-						for (var dEnd = 0.001m; dEnd <= 0.1m; dEnd += 0.005m)
+						// for (var dEnd = 0.001m; dEnd <= 0.1m; dEnd += 0.005m)
 						{
 							var strategy = new SkisSandboxStrategyManager(
 								2000,
 								BaseCommissionPercent,
 								new SkisData(Trend.Flat, 0, 0, decimal.MaxValue),
-								new SkisOptions(10m, 10m, dStart, dEnd),
-								1,
-								50,
-								0.7m
+								new SkisOptions(5m, 10m, dStart, dEnd),
+								1
 							);
 							managers.Add(strategy);
 						}
