@@ -21,23 +21,28 @@ using static System.FormattableString;
 
 namespace Shintio.Trader.Services.Background;
 
+public record PairConfig(
+	decimal StopLossMinUnrealizedPnlMin,
+	decimal StopLossMinUnrealizedPnlMax,
+	decimal StopLossProfitMultiplierMin,
+	decimal StopLossProfitMultiplierMax
+);
+
 public class TraderService : BackgroundService
 {
 	private static readonly TimeSpan TimerInterval = TimeSpan.FromHours(1);
 
-	private static readonly string[] Pairs =
-	[
-		CurrencyPair.DOGE_USDT,
-		CurrencyPair._1000PEPE_USDT,
-		CurrencyPair.WIF_USDT,
-		CurrencyPair.ETH_USDT,
-		CurrencyPair.NEAR_USDT,
-		CurrencyPair.PNUT_USDT,
-	];
+	private static readonly Dictionary<string, PairConfig> Pairs = new()
+	{
+		[CurrencyPair.DOGE_USDT] = new(25, 200, 0.15m, 0.85m),
+		[CurrencyPair._1000PEPE_USDT] = new(20, 70, 0.1m, 0.7m),
+		[CurrencyPair.WIF_USDT] = new(20, 85, 0.45m, 0.7m),
+		[CurrencyPair.ETH_USDT] = new(40, 200, 0.3m, 0.9m),
+		[CurrencyPair.NEAR_USDT] = new(35, 145, 0.6m, 0.8m),
+		[CurrencyPair.PNUT_USDT] = new(10000, 10000, 0.1m, 0.9m),
+	};
 
 	private static readonly decimal ReservedBalance = 900;
-	private static readonly (decimal min, decimal max) StopLossMinUnrealizedPnl = (50m, 120m);
-	private static readonly (decimal min, decimal max) StopLossProfitMultiplier = (0.5m, 0.8m);
 
 	private readonly ILogger<TraderService> _logger;
 	private readonly ITelegramBotClient _bot;
@@ -100,7 +105,7 @@ public class TraderService : BackgroundService
 	{
 		_timer.Interval = TimeSpan.FromHours(1).TotalMilliseconds;
 
-		foreach (var pair in Pairs)
+		foreach (var pair in Pairs.Keys)
 		{
 			try
 			{
@@ -221,6 +226,8 @@ public class TraderService : BackgroundService
 			await BotLog($"Ошибка получения информации о позициях: {positions.Error}");
 			return;
 		}
+		
+		var config = Pairs[pair];
 
 		if (data.Trend == Trend.Up)
 		{
@@ -229,12 +236,12 @@ public class TraderService : BackgroundService
 				.ToList();
 			var unrealizedPnl = longPositions.Sum(p => p.UnrealizedPnl);
 			
-			if (unrealizedPnl >= StopLossMinUnrealizedPnl.min)
+			if (unrealizedPnl >= config.StopLossMinUnrealizedPnlMin)
 			{
 				var multiplier = Map(
 					unrealizedPnl,
-					StopLossMinUnrealizedPnl.min, StopLossMinUnrealizedPnl.max,
-					StopLossProfitMultiplier.min, StopLossProfitMultiplier.max
+					config.StopLossMinUnrealizedPnlMin, config.StopLossMinUnrealizedPnlMax,
+					config.StopLossProfitMultiplierMin, config.StopLossProfitMultiplierMax
 				);
 				
 				var currentPrice = (await _binanceClient.UsdFuturesApi.ExchangeData.GetMarkPriceAsync(pair)).Data
@@ -247,7 +254,7 @@ public class TraderService : BackgroundService
 			else
 			{
 				await BotLog(Invariant(
-					$"[{pair}] Недостаточно PnL для установки Stop Loss: {unrealizedPnl:F2}/{StopLossMinUnrealizedPnl.min:F2}"));
+					$"[{pair}] Недостаточно PnL для установки Stop Loss: {unrealizedPnl:F2}/{config.StopLossMinUnrealizedPnlMin:F2}"));
 			}
 		}
 		else if (data.Trend == Trend.Down)
@@ -257,12 +264,12 @@ public class TraderService : BackgroundService
 				.ToList();
 			var unrealizedPnl = shortsPositions.Sum(p => p.UnrealizedPnl);
 
-			if (unrealizedPnl >= StopLossMinUnrealizedPnl.min)
+			if (unrealizedPnl >= config.StopLossMinUnrealizedPnlMin)
 			{
 				var multiplier = Map(
 					unrealizedPnl,
-					StopLossMinUnrealizedPnl.min, StopLossMinUnrealizedPnl.max,
-					StopLossProfitMultiplier.min, StopLossProfitMultiplier.max
+					config.StopLossMinUnrealizedPnlMin, config.StopLossMinUnrealizedPnlMax,
+					config.StopLossProfitMultiplierMin, config.StopLossProfitMultiplierMax
 				);
 				
 				var currentPrice = (await _binanceClient.UsdFuturesApi.ExchangeData.GetMarkPriceAsync(pair)).Data
@@ -275,7 +282,7 @@ public class TraderService : BackgroundService
 			else
 			{
 				await BotLog(Invariant(
-					$"[{pair}] Недостаточно PnL для установки Stop Loss: {unrealizedPnl:F2}/{StopLossMinUnrealizedPnl.min:F2}"));
+					$"[{pair}] Недостаточно PnL для установки Stop Loss: {unrealizedPnl:F2}/{config.StopLossMinUnrealizedPnlMin:F2}"));
 			}
 		}
 	}
@@ -289,7 +296,7 @@ public class TraderService : BackgroundService
 
 	private async Task LogOrders()
 	{
-		var orders = await BinanceHelper.FetchOrdersPnl(_binanceClient, Pairs);
+		var orders = await BinanceHelper.FetchOrdersPnl(_binanceClient, Pairs.Keys);
 
 		var result = orders.Select(p => Invariant($"[{p.Key}]: {p.Value:F2}"));
 
@@ -305,7 +312,8 @@ public class TraderService : BackgroundService
 
 		result.AppendLine(pair);
 		result.AppendLine($"Data: {FormatData(data)}");
-		result.AppendLine($"Data: {FormatOptions(options)}");
+		result.AppendLine($"Options: {FormatOptions(options)}");
+		result.AppendLine($"StopLoss: {FormatStopLoss(Pairs[pair])}");
 
 		await BotLog(result.ToString());
 	}
@@ -356,7 +364,7 @@ public class TraderService : BackgroundService
 				await LogBalance();
 				break;
 			case "/params":
-				foreach (var p in Pairs)
+				foreach (var p in Pairs.Keys)
 				{
 					await LogParameters(p);
 				}
@@ -372,7 +380,7 @@ public class TraderService : BackgroundService
 				await RunStrategy(pair!);
 				break;
 			case "/run_all":
-				foreach (var p in Pairs)
+				foreach (var p in Pairs.Keys)
 				{
 					await RunStrategy(p);
 				}
@@ -383,7 +391,7 @@ public class TraderService : BackgroundService
 				await LogBalance();
 				break;
 			case "/close_all":
-				foreach (var p in Pairs)
+				foreach (var p in Pairs.Keys)
 				{
 					await CloseOrders(p);
 				}
@@ -395,7 +403,7 @@ public class TraderService : BackgroundService
 				await ResetStrategy(pair!);
 				break;
 			case "/reset_all":
-				foreach (var p in Pairs)
+				foreach (var p in Pairs.Keys)
 				{
 					await ResetStrategy(p);
 				}
@@ -405,7 +413,7 @@ public class TraderService : BackgroundService
 				await UpdateStopLoss(pair!);
 				break;
 			case "/update_sl_all":
-				foreach (var p in Pairs)
+				foreach (var p in Pairs.Keys)
 				{
 					await UpdateStopLoss(p);
 				}
@@ -416,7 +424,7 @@ public class TraderService : BackgroundService
 
 	private async Task<bool> ValidatePair(string? pair)
 	{
-		if (Pairs.Contains(pair))
+		if (pair != null && Pairs.Keys.Contains(pair))
 		{
 			return true;
 		}
@@ -453,6 +461,12 @@ public class TraderService : BackgroundService
 	{
 		return Invariant(
 			$"{options.Quantity} | {options.Leverage} | Start {options.StartDelta:F4} | Stop {options.StopDelta:F4}");
+	}
+
+	private string FormatStopLoss(PairConfig pairConfig)
+	{
+		return Invariant(
+			$"{pairConfig.StopLossMinUnrealizedPnlMin:F0} -> {pairConfig.StopLossMinUnrealizedPnlMax:F0} | {pairConfig.StopLossProfitMultiplierMin:F2} -> {pairConfig.StopLossProfitMultiplierMax:F2}");
 	}
 
 	private SkisData GetOrCreateData(string pair)
