@@ -36,8 +36,8 @@ public class TraderService : BackgroundService
 	];
 
 	private static readonly decimal ReservedBalance = 900;
-	private static readonly decimal StopLossMinUnrealizedPnl = 30m;
-	private static readonly decimal StopLossProfitMultiplier = 0.8m;
+	private static readonly (decimal min, decimal max) StopLossMinUnrealizedPnl = (50m, 120m);
+	private static readonly (decimal min, decimal max) StopLossProfitMultiplier = (0.5m, 0.8m);
 
 	private readonly ILogger<TraderService> _logger;
 	private readonly ITelegramBotClient _bot;
@@ -228,20 +228,26 @@ public class TraderService : BackgroundService
 				.Where(p => p.PositionSide == PositionSide.Long && p.Quantity != 0)
 				.ToList();
 			var unrealizedPnl = longPositions.Sum(p => p.UnrealizedPnl);
-
-			if (unrealizedPnl >= StopLossMinUnrealizedPnl)
+			
+			if (unrealizedPnl >= StopLossMinUnrealizedPnl.min)
 			{
+				var multiplier = Map(
+					unrealizedPnl,
+					StopLossMinUnrealizedPnl.min, StopLossMinUnrealizedPnl.max,
+					StopLossProfitMultiplier.min, StopLossProfitMultiplier.max
+				);
+				
 				var currentPrice = (await _binanceClient.UsdFuturesApi.ExchangeData.GetMarkPriceAsync(pair)).Data
 					.MarkPrice;
 				var breakEvenPrice = longPositions.Average(p => p.BreakEvenPrice);
 
 				await BotLog(await BinanceHelper.SetStopLoss(_binanceClient, pair,
-					CalculateStopLossPrice(false, breakEvenPrice, currentPrice)));
+					CalculateStopLossPrice(false, breakEvenPrice, currentPrice, multiplier)));
 			}
 			else
 			{
 				await BotLog(Invariant(
-					$"[{pair}] Недостаточно PnL для установки Stop Loss: {unrealizedPnl:F2}/{StopLossMinUnrealizedPnl:F2}"));
+					$"[{pair}] Недостаточно PnL для установки Stop Loss: {unrealizedPnl:F2}/{StopLossMinUnrealizedPnl.min:F2}"));
 			}
 		}
 		else if (data.Trend == Trend.Down)
@@ -251,19 +257,25 @@ public class TraderService : BackgroundService
 				.ToList();
 			var unrealizedPnl = shortsPositions.Sum(p => p.UnrealizedPnl);
 
-			if (unrealizedPnl >= StopLossMinUnrealizedPnl)
+			if (unrealizedPnl >= StopLossMinUnrealizedPnl.min)
 			{
+				var multiplier = Map(
+					unrealizedPnl,
+					StopLossMinUnrealizedPnl.min, StopLossMinUnrealizedPnl.max,
+					StopLossProfitMultiplier.min, StopLossProfitMultiplier.max
+				);
+				
 				var currentPrice = (await _binanceClient.UsdFuturesApi.ExchangeData.GetMarkPriceAsync(pair)).Data
 					.MarkPrice;
 				var breakEvenPrice = shortsPositions.Average(p => p.BreakEvenPrice);
 
 				await BotLog(await BinanceHelper.SetStopLoss(_binanceClient, pair,
-					CalculateStopLossPrice(true, breakEvenPrice, currentPrice)));
+					CalculateStopLossPrice(true, breakEvenPrice, currentPrice, multiplier)));
 			}
 			else
 			{
 				await BotLog(Invariant(
-					$"[{pair}] Недостаточно PnL для установки Stop Loss: {unrealizedPnl:F2}/{StopLossMinUnrealizedPnl:F2}"));
+					$"[{pair}] Недостаточно PnL для установки Stop Loss: {unrealizedPnl:F2}/{StopLossMinUnrealizedPnl.min:F2}"));
 			}
 		}
 	}
@@ -490,10 +502,30 @@ public class TraderService : BackgroundService
 		return new SkisData(Trend.Flat, 0, 0, decimal.MaxValue);
 	}
 
-	private static decimal CalculateStopLossPrice(bool isShort, decimal breakEvenPrice, decimal currentPrice)
+	private static decimal CalculateStopLossPrice(
+		bool isShort,
+		decimal breakEvenPrice,
+		decimal currentPrice,
+		decimal multiplier
+	)
 	{
 		return isShort
-			? breakEvenPrice - (breakEvenPrice - currentPrice) * StopLossProfitMultiplier
-			: breakEvenPrice + (currentPrice - breakEvenPrice) * StopLossProfitMultiplier;
+			? breakEvenPrice - (breakEvenPrice - currentPrice) * multiplier
+			: breakEvenPrice + (currentPrice - breakEvenPrice) * multiplier;
+	}
+
+	private static decimal Map(
+		decimal value,
+		decimal fromSource,
+		decimal toSource,
+		decimal fromTarget,
+		decimal toTarget
+	)
+	{
+		return Math.Clamp(
+			(value - fromSource) / (toSource - fromSource) * (toTarget - fromTarget) + fromTarget,
+			fromTarget,
+			toTarget
+		);
 	}
 }
