@@ -290,8 +290,15 @@ public class TraderService : BackgroundService
 	private async Task LogBalance()
 	{
 		var (usdt, orders, bnb) = await BinanceHelper.FetchBalances(_binanceClient);
+		var pnl = (await BinanceHelper.FetchOrdersPnl(_binanceClient, Pairs.Keys))
+			.Sum(p => p.Value);
+		
+		var result = new StringBuilder();
+		
+		result.AppendLine(Invariant($"Текущий баланс: {usdt:F2} + {pnl:F2} = {usdt + pnl:F2} USDT | {bnb:F6} BNB"));
+		result.AppendLine(Invariant($"Профит ордеров: {pnl:F2} - {orders:F2} = {pnl - orders:F2} USDT"));
 
-		await BotLog(Invariant($"Текущий баланс: {usdt:F2} + {orders:F2} = {usdt + orders:F2} USDT | {bnb:F6} BNB"));
+		await BotLog(result.ToString());
 	}
 
 	private async Task LogOrders()
