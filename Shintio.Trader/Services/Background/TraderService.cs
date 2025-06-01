@@ -38,7 +38,7 @@ public class TraderService : BackgroundService
 		[CurrencyPair._1000PEPE_USDT] = new(20, 70, 0.1m, 0.7m),
 		[CurrencyPair.WIF_USDT] = new(20, 85, 0.45m, 0.7m),
 		[CurrencyPair.ETH_USDT] = new(40, 200, 0.3m, 0.9m),
-		[CurrencyPair.NEAR_USDT] = new(35, 145, 0.6m, 0.8m),
+		// [CurrencyPair.NEAR_USDT] = new(35, 145, 0.6m, 0.8m),
 		[CurrencyPair.PNUT_USDT] = new(10000, 10000, 0.1m, 0.9m),
 	};
 
@@ -67,7 +67,8 @@ public class TraderService : BackgroundService
 
 		var now = DateTime.UtcNow;
 		var nextHour = now.AddHours(1);
-		var nextAligned = new DateTime(nextHour.Year, nextHour.Month, nextHour.Day, nextHour.Hour, 15, 0);
+		var nextAligned = new DateTime(nextHour.Year, nextHour.Month, nextHour.Day, nextHour.Hour, 0, 0);
+		// var nextAligned = new DateTime(nextHour.Year, nextHour.Month, nextHour.Day, nextHour.Hour, 15, 0);
 
 		var delay = nextAligned - now;
 
@@ -91,7 +92,7 @@ public class TraderService : BackgroundService
 			cancellationToken: cancellationToken
 		);
 
-		// _timer.Start();
+		_timer.Start();
 
 		return base.StartAsync(cancellationToken);
 	}
