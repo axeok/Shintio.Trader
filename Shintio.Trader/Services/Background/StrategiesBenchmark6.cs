@@ -3,13 +3,10 @@ using System.Text.Json;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Shintio.Trader.Enums;
-using Shintio.Trader.Interfaces;
 using Shintio.Trader.Models;
 using Shintio.Trader.Models.Managers;
 using Shintio.Trader.Models.Sandbox;
 using Shintio.Trader.Models.Strategies.Skis;
-using Shintio.Trader.Services.Strategies;
-using Shintio.Trader.Tables;
 using Shintio.Trader.Utils;
 
 namespace Shintio.Trader.Services.Background;
@@ -20,39 +17,6 @@ public class StrategiesBenchmark6 : BackgroundService
 	
 	// public static readonly decimal BaseCommissionPercent = 0;
 	public static readonly decimal BaseCommissionPercent = 0.0005m;
-
-	public static readonly string[] Pairs =
-	[
-		CurrencyPair.ETH_USDT,
-		// CurrencyPair.SOL_USDT,
-		// CurrencyPair.BTC_USDT,
-		// CurrencyPair.XRP_USDT,
-		// CurrencyPair.DOGE_USDT,
-		// CurrencyPair.NEAR_USDT,
-		// CurrencyPair.LISTA_USDT,
-		// CurrencyPair.OM_USDT,
-		// CurrencyPair.BNB_USDT,
-		// CurrencyPair.ADA_USDT,
-		// CurrencyPair.AVAX_USDT,
-		// CurrencyPair.TRX_USDT,
-		// CurrencyPair.LTC_USDT,
-		// CurrencyPair.LINK_USDT,
-		// CurrencyPair.NEAR_USDT,
-		// CurrencyPair.BCH_USDT,
-		// CurrencyPair.FIL_USDT,
-		// CurrencyPair.PEPE_USDT,
-		// CurrencyPair.WIF_USDT,
-	];
-
-	// public static readonly DateTime StartTime = new(2024, 11, 1);
-	// public static readonly DateTime StartTime = new(2024, 05, 1);
-	// public static readonly DateTime EndTime = new(2025, 05, 1);
-
-	// private static readonly decimal InitialBalance = 10_000;
-
-	public static readonly int DaySteps = (int)TimeSpan.FromHours(24).TotalSeconds;
-	public static readonly int DaysPerSegment = 3;
-	public static readonly int SegmentSteps = (int)TimeSpan.FromDays(DaysPerSegment).TotalSeconds;
 
 	private readonly ILogger<StrategiesBenchmark6> _logger;
 
@@ -173,26 +137,6 @@ public class StrategiesBenchmark6 : BackgroundService
 
 					bests[$"123"] = values;
 				}
-
-				// var best = result.MaxBy(p => p.Value.Last());
-				//
-				// // var best = result.MaxBy(p => p.Value.Average(d => d[0]));
-				// _logger.LogInformation(best.Key.Options.ToString());
-				// _logger.LogInformation(best.Value.Last().ToString());
-				//
-				// bests[$"{pair} : {best.Key.Options}"] = best.Value;
-
-				// var bestIndex = FindMostStableGrowthIndex(result.Values.Select(d => d.ToArray()).ToList(), 10);
-				// if (bestIndex >= 0)
-				// {
-				// 	var best = result.ElementAt(bestIndex);
-				//
-				// 	// var best = result.MaxBy(p => p.Value.Average(d => d[0]));
-				// 	_logger.LogInformation(best.Key.Options.ToString());
-				// 	_logger.LogInformation(best.Value.Last().ToString());
-				//
-				// 	bests[$"{pair} : {best.Key.Options}"] = best.Value;
-				// }
 			}
 
 			stopwatch.Stop();
@@ -205,7 +149,7 @@ public class StrategiesBenchmark6 : BackgroundService
 			{
 				StartTime = start.ToString("yyyy-MM-dd"),
 				EndTime = end.ToString("yyyy-MM-dd"),
-				SaveStepSeconds = DaySteps,
+				SaveStepSeconds = (int)TimeSpan.FromHours(24).TotalSeconds,
 				Pairs = bests.First().Value.First().Pairs.Keys,
 				Values = bests.ToDictionary(
 					p => p.Key,
@@ -232,92 +176,5 @@ public class StrategiesBenchmark6 : BackgroundService
 		);
 
 		_logger.LogInformation("Benchmark completed");
-	}
-
-	public static int FindMostStableGrowthIndex(List<decimal[]> seriesList, double tolerancePercent = 0.5)
-	{
-		int bestIndex = -1;
-		double bestScore = double.NegativeInfinity;
-
-		for (int i = 0; i < seriesList.Count; i++)
-		{
-			var series = seriesList[i];
-			// if (!IsMostlyMonotonicIncreasing(series, tolerancePercent)) continue;
-			if (!IsMostlyMonotonicIncreasingByMax(series, tolerancePercent)) continue;
-
-			double[] x = Enumerable.Range(0, series.Length).Select(v => (double)v).ToArray();
-			double[] y = series.Select(v => (double)v).ToArray();
-
-			(double slope, double r2) = LinearRegression(x, y);
-
-			if (slope > 0)
-			{
-				double score = r2 * slope;
-				if (score > bestScore)
-				{
-					bestScore = score;
-					bestIndex = i;
-				}
-			}
-		}
-
-		return bestIndex;
-	}
-
-	private static bool IsMostlyMonotonicIncreasing(decimal[] series, double tolerancePercent)
-	{
-		double tolerance = 1 - (tolerancePercent / 100.0);
-		for (int i = 1; i < series.Length; i++)
-		{
-			if ((double)series[i] < (double)series[i - 1] * tolerance)
-				return false;
-		}
-
-		return true;
-	}
-
-	private static (double slope, double r2) LinearRegression(double[] x, double[] y)
-	{
-		int n = x.Length;
-		double avgX = x.Average();
-		double avgY = y.Average();
-
-		double numerator = 0, denominator = 0, totalVariation = 0, explainedVariation = 0;
-
-		for (int i = 0; i < n; i++)
-		{
-			numerator += (x[i] - avgX) * (y[i] - avgY);
-			denominator += (x[i] - avgX) * (x[i] - avgX);
-		}
-
-		double slope = numerator / denominator;
-		double intercept = avgY - slope * avgX;
-
-		for (int i = 0; i < n; i++)
-		{
-			double predictedY = slope * x[i] + intercept;
-			explainedVariation += (predictedY - avgY) * (predictedY - avgY);
-			totalVariation += (y[i] - avgY) * (y[i] - avgY);
-		}
-
-		double r2 = totalVariation == 0 ? 1 : explainedVariation / totalVariation;
-		return (slope, r2);
-	}
-
-	private static bool IsMostlyMonotonicIncreasingByMax(decimal[] series, double tolerancePercent)
-	{
-		double tolerance = 1 - (tolerancePercent / 100.0);
-		decimal maxSoFar = series[0];
-
-		for (int i = 1; i < series.Length; i++)
-		{
-			if ((double)series[i] < (double)maxSoFar * tolerance)
-				return false;
-
-			if (series[i] > maxSoFar)
-				maxSoFar = series[i];
-		}
-
-		return true;
 	}
 }
