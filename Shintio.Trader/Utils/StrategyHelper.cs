@@ -18,6 +18,21 @@ public static class StrategyHelper
 
 		return balance - (balance * gapPercent) - balanceToRemove > 0;
 	}
+	
+	public static bool ValidateBalanceLiquidation(
+		TradeMultipairAccount account,
+		string pair,
+		decimal balanceToRemove,
+		decimal currentPrice,
+		decimal gapPercent = 0.1m
+	)
+	{
+		var ordersBalance = account.GetOrders(pair).Sum(o => o.CalculateCurrentQuantity(currentPrice));
+
+		var balance = account.Balance + ordersBalance;
+
+		return balance - (balance * gapPercent) - balanceToRemove > 0;
+	}
 
 	public static bool ValidateBalanceValue(TradeAccount account, decimal balanceToRemove, decimal value = 0)
 	{

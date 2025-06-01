@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Shintio.Trader.Enums;
 using Shintio.Trader.Interfaces;
 using Shintio.Trader.Models;
+using Shintio.Trader.Models.Managers;
 using Shintio.Trader.Models.Sandbox;
 using Shintio.Trader.Models.Strategies.Skis;
 using Shintio.Trader.Services.Strategies;
