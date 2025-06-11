@@ -296,7 +296,7 @@ public class TraderService : BackgroundService
 		
 		var result = new StringBuilder();
 		
-		result.AppendLine(Invariant($"Текущий баланс: {usdt:F2} + {orders:F2} + {pnl:F2} = {usdt + orders + pnl:F2} USDT | {bnb:F6} BNB"));
+		result.AppendLine(Invariant($"Баланс: {usdt + orders + pnl:F2} USDT = {usdt:F2} + {orders:F2} + {pnl:F2} | {bnb:F6} BNB"));
 
 		await BotLog(result.ToString());
 	}
