@@ -36,8 +36,10 @@ public class StrategiesBenchmark6 : BackgroundService
 
 	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 	{
-		var start = new DateTime(2025, 1, 15);
-		var end = new DateTime(2025, 5, 24);
+		var start = new DateTime(2025, 6, 1, 10, 0, 0);
+		var end = new DateTime(2025, 6, 15);
+		
+		var collectStep = TimeSpan.FromHours(1);
 
 		var bests = new Dictionary<string, IReadOnlyCollection<BenchmarkResult>>();
 
@@ -48,13 +50,13 @@ public class StrategiesBenchmark6 : BackgroundService
 			// for (var percent = 0.01m; percent <= 0.1m; percent += 0.02m)
 			{
 				var managers = new List<SkisMultipairSandboxStrategyManager>();
-				var (dStart, dEnd) = (0.016m, 0.096m);
+				// var (dStart, dEnd) = (0.016m, 0.096m);
 				// for (var dStart = 0.001m; dStart <= 0.1m; dStart += 0.005m)
 				{
 					// for (var dEnd = 0.001m; dEnd <= 0.1m; dEnd += 0.005m)
 					{
 						var strategy = new SkisMultipairSandboxStrategyManager(
-							2000,
+							1753.68m,
 							BaseCommissionPercent,
 							new Dictionary<string, SkisPairInfo>()
 							{
@@ -78,11 +80,11 @@ public class StrategiesBenchmark6 : BackgroundService
 									new SkisOptions(5m, 10m, 0.0160m, 0.0960m),
 									40, 200, 0.3m, 0.9m
 								),
-								[CurrencyPair.NEAR_USDT] = new SkisPairInfo(
-									new SkisData(Trend.Flat, 0, 0, decimal.MaxValue),
-									new SkisOptions(5m, 10m, 0.0660m, 0.0910m),
-									35, 145, 0.6m, 0.8m
-								),
+								// [CurrencyPair.NEAR_USDT] = new SkisPairInfo(
+								// 	new SkisData(Trend.Flat, 0, 0, decimal.MaxValue),
+								// 	new SkisOptions(5m, 10m, 0.0660m, 0.0910m),
+								// 	35, 145, 0.6m, 0.8m
+								// ),
 								[CurrencyPair.PNUT_USDT] = new SkisPairInfo(
 									new SkisData(Trend.Flat, 0, 0, decimal.MaxValue),
 									new SkisOptions(5m, 10m, 0.0360m, 0.0210m),
@@ -102,7 +104,7 @@ public class StrategiesBenchmark6 : BackgroundService
 					start,
 					end,
 					TimeSpan.FromHours(1),
-					24,
+					(int)collectStep.TotalHours,
 					managers,
 					(manager, pairs, step) =>
 					{
@@ -149,7 +151,7 @@ public class StrategiesBenchmark6 : BackgroundService
 			{
 				StartTime = start.ToString("yyyy-MM-dd"),
 				EndTime = end.ToString("yyyy-MM-dd"),
-				SaveStepSeconds = (int)TimeSpan.FromHours(24).TotalSeconds,
+				SaveStepSeconds = (int)collectStep.TotalSeconds,
 				Pairs = bests.First().Value.First().Pairs.Keys,
 				Values = bests.ToDictionary(
 					p => p.Key,
