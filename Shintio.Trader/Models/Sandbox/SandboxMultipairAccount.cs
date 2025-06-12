@@ -70,6 +70,7 @@ public class TradeMultipairAccount
 
 	public decimal CloseOrder(string pair, SandboxOrder order, decimal currentPrice)
 	{
+		var pnl = order.CalculateProfitQuantity(currentPrice);
 		var quantity = order.CalculateCurrentQuantity(currentPrice);
 
 		GetOrders(pair).Remove(order);
@@ -103,7 +104,7 @@ public class TradeMultipairAccount
 			}
 		}
 
-		return quantity;
+		return pnl;
 	}
 
 	#endregion

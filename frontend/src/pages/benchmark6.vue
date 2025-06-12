@@ -12,7 +12,7 @@
 <script setup>
 	import data from "../../../Shintio.Trader/bin/Debug/net9.0/benchmark.json";
 
-	const values = $computed(() => Object.values(data.Values)[0]);
+	const values = $computed(() => Object.values(data.Values));
 	
 	const dates = $computed(() => {
 		const startDate = new Date(data.StartTime);
@@ -47,8 +47,17 @@
 		})),
 	}));
 
+	const orders = $computed(() => ({
+		name: "Orders",
+		type: "line",
+		data: values.map((value, i) => ({
+			x: dates[i],
+			y: value[2],
+		})),
+	}));
+
 	const pairsBalances = $computed(() => {
-		let pairIndex = 1;
+		let pairIndex = 2;
 
 		return data.Pairs.map(pair => {
 			pairIndex++;
@@ -63,6 +72,32 @@
 			};
 		});
 	});
+
+	const totalPnls = $computed(() => {
+		let pairIndex = -1;
+
+		return data.Pairs.map(pair => {
+			pairIndex++;
+
+			return {
+				name: `Total PnL ${pair}`,
+				type: "line",
+				data: data.TotalPnls.map((value, i) => ({
+					x: dates[i],
+					y: value[pairIndex],
+				})),
+			};
+		});
+	});
+
+	const price = $computed(() => ({
+		name: "Price",
+		type: "line",
+		data: data.Prices.map((value, i) => ({
+			x: dates[i],
+			y: value,
+		})),
+	}));
 
 	const options = $computed(() => ({
 		chart: {
@@ -81,6 +116,7 @@
 			},
 			x: {
 				show: true,
+				format: 'dd MMM yyyy HH:mm',
 			},
 		},
 		xaxis: {
@@ -89,7 +125,7 @@
 		yaxis: [
 			{
 				decimalsInFloat: 0,
-				seriesName: ["TotalBalance", "Balance"],
+				seriesName: ["TotalBalance", "Balance", "Orders"],
 				title: {
 					text: "Balance",
 				},
@@ -111,6 +147,22 @@
 				},
 				opposite: true,
 			},
+			{
+				decimalsInFloat: 0,
+				seriesName: totalPnls.map(p => p.name),
+				title: {
+					text: "Total PnL",
+				},
+				opposite: true,
+			},
+			// {
+			// 	decimalsInFloat: 0,
+			// 	seriesName: "Price",
+			// 	title: {
+			// 		text: "Price",
+			// 	},
+			// 	opposite: true,
+			// },
 		],
 	}));
 
@@ -119,7 +171,10 @@
 			// prices,
 			totalBalance,
 			balance,
+			orders,
 			...pairsBalances,
+			...totalPnls,
+			// price,
 			// starts,
 			// ends,
 			// deltaBalances,

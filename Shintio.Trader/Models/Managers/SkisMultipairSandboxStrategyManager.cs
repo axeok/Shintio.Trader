@@ -36,7 +36,7 @@ public class SkisMultipairSandboxStrategyManager(
 
 			foreach (var order in Account.GetOrders(pair).ToArray())
 			{
-				Account.CloseOrder(pair, order, data.StopLoss.Value);
+				PairsInfo[pair].TotalPnl += Account.CloseOrder(pair, order, data.StopLoss.Value);
 			}
 
 			PairsInfo[pair].Data = SkisData.CreateDefault();

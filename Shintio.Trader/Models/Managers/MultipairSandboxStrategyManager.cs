@@ -45,7 +45,7 @@ public class MultipairSandboxStrategyManager<TStrategy> : IMultipairStrategyMana
 		{
 			foreach (var order in Account.GetLongs(pair).ToArray())
 			{
-				Account.CloseOrder(pair, order, currentPrice);
+				PairsInfo[pair].TotalPnl += Account.CloseOrder(pair, order, currentPrice);
 			}
 		}
 
@@ -53,7 +53,7 @@ public class MultipairSandboxStrategyManager<TStrategy> : IMultipairStrategyMana
 		{
 			foreach (var order in Account.GetShorts(pair).ToArray())
 			{
-				Account.CloseOrder(pair, order, currentPrice);
+				PairsInfo[pair].TotalPnl += Account.CloseOrder(pair, order, currentPrice);
 			}
 		}
 
@@ -75,6 +75,7 @@ public class MultipairSandboxStrategyManager<TStrategy> : IMultipairStrategyMana
 		decimal currentPrice
 	)
 	{
+		// return true;
 		return tradeAccount.Balance > balanceToRemove &&
 		       StrategyHelper.ValidateBalanceLiquidation(tradeAccount, pair, balanceToRemove, currentPrice);
 	}
