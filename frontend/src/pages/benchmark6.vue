@@ -64,6 +64,15 @@
 		});
 	});
 
+	const price = $computed(() => ({
+		name: "Price",
+		type: "line",
+		data: data.Prices.map((value, i) => ({
+			x: dates[i],
+			y: value,
+		})),
+	}));
+
 	const options = $computed(() => ({
 		chart: {
 			id: "vuechart-example",
@@ -81,6 +90,7 @@
 			},
 			x: {
 				show: true,
+				format: 'dd MMM yyyy HH:mm',
 			},
 		},
 		xaxis: {
@@ -111,6 +121,14 @@
 				},
 				opposite: true,
 			},
+			{
+				decimalsInFloat: 0,
+				seriesName: "Price",
+				title: {
+					text: "Price",
+				},
+				opposite: true,
+			},
 		],
 	}));
 
@@ -120,6 +138,7 @@
 			totalBalance,
 			balance,
 			...pairsBalances,
+			// price,
 			// starts,
 			// ends,
 			// deltaBalances,

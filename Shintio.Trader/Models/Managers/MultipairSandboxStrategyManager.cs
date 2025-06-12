@@ -75,6 +75,7 @@ public class MultipairSandboxStrategyManager<TStrategy> : IMultipairStrategyMana
 		decimal currentPrice
 	)
 	{
+		return true;
 		return tradeAccount.Balance > balanceToRemove &&
 		       StrategyHelper.ValidateBalanceLiquidation(tradeAccount, pair, balanceToRemove, currentPrice);
 	}

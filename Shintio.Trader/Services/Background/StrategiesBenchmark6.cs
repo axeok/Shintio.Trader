@@ -13,7 +13,7 @@ namespace Shintio.Trader.Services.Background;
 
 public class StrategiesBenchmark6 : BackgroundService
 {
-	private record BenchmarkResult(decimal Balance, decimal TotalBalance, IReadOnlyDictionary<string, decimal> Pairs);
+	private record BenchmarkResult(decimal EthPrice, decimal Balance, decimal TotalBalance, IReadOnlyDictionary<string, decimal> Pairs);
 	
 	// public static readonly decimal BaseCommissionPercent = 0;
 	public static readonly decimal BaseCommissionPercent = 0.0005m;
@@ -65,7 +65,7 @@ public class StrategiesBenchmark6 : BackgroundService
 									new SkisOptions(5m, 10m, 0.0010m, 0.0260m),
 									25, 200, 0.15m, 0.85m
 								),
-								[CurrencyPair.PEPE_USDT] = new SkisPairInfo(
+								[CurrencyPair._1000PEPE_USDT] = new SkisPairInfo(
 									new SkisData(Trend.Flat, 0, 0, decimal.MaxValue),
 									new SkisOptions(5m, 10m, 0.0460m,0.0360m),
 									20, 70, 0.1m, 0.7m
@@ -112,6 +112,7 @@ public class StrategiesBenchmark6 : BackgroundService
 						// return (decimal)manager.Data.TrendSteps;
 						// return manager.Account.Balance;
 						return new BenchmarkResult(
+							pairs["ETHUSDT"],
 							manager.Account.Balance,
 							manager.Account.CalculateTotalCurrentQuantity(pairs),
 							pairs.ToDictionary(
@@ -161,6 +162,7 @@ public class StrategiesBenchmark6 : BackgroundService
 						r.TotalBalance,
 					}.Concat(r.Pairs.Values))
 				),
+				Prices = bests.First().Value.Select(r => r.EthPrice),
 				// Shorts = bests.Value.Select(d => d[1]),
 				// Longs = bests.Value.Select(d => d[2]),
 				// Starts = starts,
