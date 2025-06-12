@@ -70,6 +70,18 @@ public static class BinanceHelper
 		);
 	}
 
+	public static async Task<decimal> FetchOrdersQuantity(
+		IBinanceRestClient binanceClient,
+		string pair
+	)
+	{
+		var positions = (await binanceClient.UsdFuturesApi.Account.GetPositionInformationAsync())
+			.Data
+			.ToArray();
+
+		return positions.Where(p => p.Symbol == pair).Sum(p => p.Quantity);
+	}
+
 	public static async Task<string> TryPlaceOrder(
 		IBinanceRestClient binanceClient,
 		string pair,

@@ -42,8 +42,6 @@ public class TraderService : BackgroundService
 		[CurrencyPair.PNUT_USDT] = new(10000, 10000, 0.1m, 0.9m),
 	};
 
-	private static readonly decimal ReservedBalance = 900;
-
 	private readonly ILogger<TraderService> _logger;
 	private readonly ITelegramBotClient _bot;
 	private readonly IBinanceRestClient _binanceClient;
@@ -125,28 +123,30 @@ public class TraderService : BackgroundService
 	private async Task RunStrategy(string pair)
 	{
 		var (usdt, ordersBalance, _) = await BinanceHelper.FetchBalances(_binanceClient);
-		
-		var currentPrice = (await _binanceClient.UsdFuturesApi.ExchangeData.GetMarkPriceAsync(pair)).Data.MarkPrice;
+
+		var quantity = await BinanceHelper.FetchOrdersQuantity(_binanceClient, pair);
 
 		var data = GetOrCreateData(pair);
-		if (data.Trend != Trend.Flat && ordersBalance == 0)
+		if (data.Trend != Trend.Flat && quantity == 0)
 		{
 			await BotLog($"[{pair}] Тренд закрылся по стоп лоссу, обнуление...");
 			SaveData(GetDefaultData(), pair);
 			data = GetOrCreateData(pair);
 		}
-		
+
 		var options = GetOrCreateOptions(pair);
 
+		var currentPrice = (await _binanceClient.UsdFuturesApi.ExchangeData.GetMarkPriceAsync(pair)).Data.MarkPrice;
+
 		var (newData, orders, closeLongs, closeShorts) =
-			SkisTradeStrategy.Run(currentPrice, usdt - ReservedBalance, data, options);
+			SkisTradeStrategy.Run(currentPrice, usdt, data, options);
 
 		var report = new StringBuilder();
 
 		// report.AppendLine($"[{pair}] https://www.binance.com/futures/{pair}");
 		report.AppendLine();
 
-		report.AppendLine(Invariant($"Свободный баланс: {usdt - ReservedBalance:F2} ({usdt:F2}) USDT"));
+		report.AppendLine(Invariant($"Свободный баланс: {usdt:F2} ({usdt:F2}) USDT"));
 		report.AppendLine(Invariant($"Текущая цена: {currentPrice:F6} {pair}"));
 		report.AppendLine($"Старые параметры: {FormatData(data)}");
 		report.AppendLine($"Новые параметры: {FormatData(newData)}");
