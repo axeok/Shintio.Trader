@@ -27,4 +27,5 @@ public class SkisPairInfo
 	public decimal StopLossMinUnrealizedPnlMax { get; set; }
 	public decimal StopLossProfitMultiplierMin { get; set; }
 	public decimal StopLossProfitMultiplierMax { get; set; }
+	public decimal TotalPnl { get; set; } = 0;
 }

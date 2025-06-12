@@ -13,9 +13,15 @@ namespace Shintio.Trader.Services.Background;
 
 public class StrategiesBenchmark6 : BackgroundService
 {
-	private record BenchmarkResult(decimal Balance, decimal TotalBalance, IReadOnlyDictionary<string, decimal> Pairs);
+	private record BenchmarkResult(
+		decimal EthPrice,
+		decimal Balance,
+		decimal TotalBalance,
+		decimal Orders,
+		IReadOnlyDictionary<string, decimal> Pairs,
+		IReadOnlyDictionary<string, decimal> TotalPnls
+	);
 	
-	// public static readonly decimal BaseCommissionPercent = 0;
 	public static readonly decimal BaseCommissionPercent = 0.0005m;
 
 	private readonly ILogger<StrategiesBenchmark6> _logger;
@@ -36,139 +42,111 @@ public class StrategiesBenchmark6 : BackgroundService
 
 	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 	{
-		var start = new DateTime(2025, 6, 1, 10, 0, 0);
-		var end = new DateTime(2025, 6, 15);
-		
+		var start = new DateTime(2025, 6, 1, 0, 0, 0);
+		var end = new DateTime(2025, 6, 30);
+
 		var collectStep = TimeSpan.FromHours(1);
 
-		var bests = new Dictionary<string, IReadOnlyCollection<BenchmarkResult>>();
+		var stopwatch = Stopwatch.StartNew();
 
-		// for (var profitMultiplier = 0.01m; profitMultiplier <= 1m; profitMultiplier += 0.05m)
+		var managers = new List<SkisMultipairSandboxStrategyManager>()
 		{
-			var stopwatch = Stopwatch.StartNew();
+			new(
+				1511.54m,
+				BaseCommissionPercent,
+				new Dictionary<string, SkisPairInfo>()
+				{
+					[CurrencyPair.DOGE_USDT] = new SkisPairInfo(
+						new SkisData(Trend.Flat, 0, 0, decimal.MaxValue),
+						new SkisOptions(5m, 10m, 0.0010m, 0.0260m),
+						25, 200, 0.15m, 0.85m
+					),
+					[CurrencyPair._1000PEPE_USDT] = new SkisPairInfo(
+						new SkisData(Trend.Flat, 0, 0, decimal.MaxValue),
+						new SkisOptions(5m, 10m, 0.0460m, 0.0360m),
+						20, 70, 0.1m, 0.7m
+					),
+					[CurrencyPair.WIF_USDT] = new SkisPairInfo(
+						new SkisData(Trend.Flat, 0, 0, decimal.MaxValue),
+						new SkisOptions(5m, 10m, 0.0960m, 0.0210m),
+						20, 85, 0.45m, 0.7m
+					),
+					[CurrencyPair.ETH_USDT] = new SkisPairInfo(
+						new SkisData(Trend.Flat, 0, 0, decimal.MaxValue),
+						new SkisOptions(5m, 10m, 0.0160m, 0.0960m),
+						40, 200, 0.3m, 0.9m
+					),
+					// [CurrencyPair.NEAR_USDT] = new SkisPairInfo(
+					// 	new SkisData(Trend.Flat, 0, 0, decimal.MaxValue),
+					// 	new SkisOptions(5m, 10m, 0.0660m, 0.0910m),
+					// 	35, 145, 0.6m, 0.8m
+					// ),
+					[CurrencyPair.PNUT_USDT] = new SkisPairInfo(
+						new SkisData(Trend.Flat, 0, 0, decimal.MaxValue),
+						new SkisOptions(5m, 10m, 0.0360m, 0.0210m),
+						10000, 10000, 0.1m, 0.9m
+					),
+				},
+				1
+			)
+		};
 
-			// for (var percent = 0.01m; percent <= 0.1m; percent += 0.02m)
+		var result = _runner.MultipairRunParallel<BenchmarkResult, SkisMultipairSandboxStrategyManager>(
+			start,
+			end,
+			TimeSpan.FromHours(1),
+			(int)collectStep.TotalHours,
+			managers,
+			(manager, pairs, step) =>
 			{
-				var managers = new List<SkisMultipairSandboxStrategyManager>();
-				// var (dStart, dEnd) = (0.016m, 0.096m);
-				// for (var dStart = 0.001m; dStart <= 0.1m; dStart += 0.005m)
-				{
-					// for (var dEnd = 0.001m; dEnd <= 0.1m; dEnd += 0.005m)
-					{
-						var strategy = new SkisMultipairSandboxStrategyManager(
-							1753.68m,
-							BaseCommissionPercent,
-							new Dictionary<string, SkisPairInfo>()
-							{
-								[CurrencyPair.DOGE_USDT] = new SkisPairInfo(
-									new SkisData(Trend.Flat, 0, 0, decimal.MaxValue),
-									new SkisOptions(5m, 10m, 0.0010m, 0.0260m),
-									25, 200, 0.15m, 0.85m
-								),
-								[CurrencyPair.PEPE_USDT] = new SkisPairInfo(
-									new SkisData(Trend.Flat, 0, 0, decimal.MaxValue),
-									new SkisOptions(5m, 10m, 0.0460m,0.0360m),
-									20, 70, 0.1m, 0.7m
-								),
-								[CurrencyPair.WIF_USDT] = new SkisPairInfo(
-									new SkisData(Trend.Flat, 0, 0, decimal.MaxValue),
-									new SkisOptions(5m, 10m, 0.0960m, 0.0210m),
-									20, 85, 0.45m, 0.7m
-								),
-								[CurrencyPair.ETH_USDT] = new SkisPairInfo(
-									new SkisData(Trend.Flat, 0, 0, decimal.MaxValue),
-									new SkisOptions(5m, 10m, 0.0160m, 0.0960m),
-									40, 200, 0.3m, 0.9m
-								),
-								// [CurrencyPair.NEAR_USDT] = new SkisPairInfo(
-								// 	new SkisData(Trend.Flat, 0, 0, decimal.MaxValue),
-								// 	new SkisOptions(5m, 10m, 0.0660m, 0.0910m),
-								// 	35, 145, 0.6m, 0.8m
-								// ),
-								[CurrencyPair.PNUT_USDT] = new SkisPairInfo(
-									new SkisData(Trend.Flat, 0, 0, decimal.MaxValue),
-									new SkisOptions(5m, 10m, 0.0360m, 0.0210m),
-									10000, 10000, 0.1m, 0.9m
-								),
-							},
-							1
-						);
-						managers.Add(strategy);
-					}
-				}
-
-				var totalSteps = (int)((end - start).TotalMinutes / TimeSpan.FromHours(1).TotalMinutes);
-				var totalCollects = (int)totalSteps / 24;
-
-				var result = _runner.MultipairRunParallel<BenchmarkResult, SkisMultipairSandboxStrategyManager>(
-					start,
-					end,
-					TimeSpan.FromHours(1),
-					(int)collectStep.TotalHours,
-					managers,
-					(manager, pairs, step) =>
-					{
-						// _logger.LogInformation($"[{Pair}] Collecting {(step / 24) + 1}/{totalCollects}...");
-						// return (decimal)manager.Data.TrendSteps;
-						// return manager.Account.Balance;
-						return new BenchmarkResult(
-							manager.Account.Balance,
-							manager.Account.CalculateTotalCurrentQuantity(pairs),
-							pairs.ToDictionary(
-								p => p.Key,
-								// p => (decimal)(manager.Account.GetLongs(p.Key).Count() - manager.Account.GetShorts(p.Key).Count()))
-								p => manager.Account.CalculateOrdersCurrentPnL(p.Key, p.Value))
-						);
-						// return manager.Account.CalculateTotalCurrentQuantity(pairs);
-						// return manager.Account.LastCalculatedBalance;
-						// return
-						// [
-						// 	manager.Account.CalculateTotalCurrentQuantity(currentPrice),
-						// 	// manager.Account.Statistics.Shorts.TotalCount, manager.Account.Statistics.Longs.TotalCount
-						// ];
-						// return ;
-					}
+				// _logger.LogInformation($"[{Pair}] Collecting {(step / 24) + 1}/{totalCollects}...");
+				// return (decimal)manager.Data.TrendSteps;
+				// return manager.Account.Balance;
+				return new BenchmarkResult(
+					pairs["ETHUSDT"],
+					manager.Account.Balance,
+					manager.Account.CalculateTotalCurrentQuantity(pairs),
+					manager.Account.CalculateOrdersCurrentQuantity(pairs),
+					pairs.ToDictionary(
+						p => p.Key,
+						// p => (decimal)(manager.Account.GetLongs(p.Key).Count() - manager.Account.GetShorts(p.Key).Count()))
+						p => manager.Account.CalculateOrdersCurrentPnL(p.Key, p.Value)),
+					pairs.ToDictionary(
+						p => p.Key,
+						p => manager.PairsInfo[p.Key].TotalPnl)
 				);
-
-				foreach (var (manager, values) in result)
-				{
-					// if (values.Last() <= values.First())
-					// {
-					// 	continue;
-					// }
-
-					bests[$"123"] = values;
-				}
+				// return manager.Account.CalculateTotalCurrentQuantity(pairs);
+				// return manager.Account.LastCalculatedBalance;
+				// return
+				// [
+				// 	manager.Account.CalculateTotalCurrentQuantity(currentPrice),
+				// 	// manager.Account.Statistics.Shorts.TotalCount, manager.Account.Statistics.Longs.TotalCount
+				// ];
+				// return ;
 			}
+		);
 
-			stopwatch.Stop();
-			_logger.LogInformation($"Elapsed: {stopwatch.Elapsed}");
-		}
+		var benchmarkResults = result.Values.First();
+
+		stopwatch.Stop();
+		_logger.LogInformation($"Elapsed: {stopwatch.Elapsed}");
 
 		await File.WriteAllTextAsync(
-			$"benchmark.json",
+			"benchmark.json",
 			JsonSerializer.Serialize(new
 			{
 				StartTime = start.ToString("yyyy-MM-dd"),
 				EndTime = end.ToString("yyyy-MM-dd"),
 				SaveStepSeconds = (int)collectStep.TotalSeconds,
-				Pairs = bests.First().Value.First().Pairs.Keys,
-				Values = bests.ToDictionary(
-					p => p.Key,
-					p => p.Value.Select(r => new decimal[]
-					{
-						r.Balance,
-						r.TotalBalance,
-					}.Concat(r.Pairs.Values))
-				),
-				// Shorts = bests.Value.Select(d => d[1]),
-				// Longs = bests.Value.Select(d => d[2]),
-				// Starts = starts,
-				// Ends = ends,
-				// DeltaBalances = deltaBalances,
-				// Prices = prices,
-				// WinratesCount = winratesCount,
-				// WinratesSum = winratesSum,
+				Pairs = benchmarkResults.First().Pairs.Keys,
+				Values = benchmarkResults.Select(r => new[]
+				{
+					r.Balance,
+					r.TotalBalance,
+					r.Orders,
+				}.Concat(r.Pairs.Values)),
+				TotalPnls = benchmarkResults.Select(r => r.TotalPnls.Select(p => p.Value)),
+				Prices = benchmarkResults.Select(r => r.EthPrice),
 			},
 			new JsonSerializerOptions()
 			{

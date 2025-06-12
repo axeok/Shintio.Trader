@@ -170,21 +170,21 @@ public class StrategiesRunner
 					
 					manager.ProcessMarket(highsAndLows);
 
-					if (manager.Account.CalculateTotalCurrentQuantity(currentPrices) <= 10)
-					{
-						((List<TData>)result[manager]).Add(collectResult.Invoke(manager, currentPrices, step));
-						
-						manager.Account.Balance = 0;
-
-						// Console.WriteLine(manager.Account.Orders["NEARUSDT"].Sum(o => o.TotalQuantity));
-
-						foreach (var orders in manager.Account.Orders.Values)
-						{
-							orders.Clear();
-						}
-
-						return;
-					}
+					// if (manager.Account.CalculateTotalCurrentQuantity(currentPrices) <= 10)
+					// {
+					// 	((List<TData>)result[manager]).Add(collectResult.Invoke(manager, currentPrices, step));
+					// 	
+					// 	manager.Account.Balance = 0;
+					//
+					// 	// Console.WriteLine(manager.Account.Orders["NEARUSDT"].Sum(o => o.TotalQuantity));
+					//
+					// 	foreach (var orders in manager.Account.Orders.Values)
+					// 	{
+					// 		orders.Clear();
+					// 	}
+					//
+					// 	return;
+					// }
 
 					manager.Run(currentPrices, step);
 
