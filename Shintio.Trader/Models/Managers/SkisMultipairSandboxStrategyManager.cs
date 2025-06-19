@@ -31,7 +31,7 @@ public class SkisMultipairSandboxStrategyManager(
 				    (data.Trend == Trend.Down && high >= data.StopLoss.Value)
 			    ))
 			{
-				return;
+				continue;
 			}
 
 			foreach (var order in Account.GetOrders(pair).ToArray())
@@ -65,7 +65,7 @@ public class SkisMultipairSandboxStrategyManager(
 				// multiplier = 0.8m;
 
 				var breakEvenPrice = Account.GetBreakEvenPriceForOrders(orders);
-
+				
 				PairsInfo[pair].Data = data with
 				{
 					StopLoss = CalculateStopLossPrice(false, breakEvenPrice, currentPrice, multiplier)
@@ -87,7 +87,7 @@ public class SkisMultipairSandboxStrategyManager(
 				// multiplier = 0.8m;
 
 				var breakEvenPrice = Account.GetBreakEvenPriceForOrders(orders);
-
+				
 				PairsInfo[pair].Data = data with
 				{
 					StopLoss = CalculateStopLossPrice(true, breakEvenPrice, currentPrice, multiplier)

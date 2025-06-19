@@ -165,7 +165,7 @@ public class StrategiesRunner
 						var item = items[step];
 						
 						highsAndLows[pair] = (item.Max(i => i.HighPrice), item.Min(i => i.LowPrice));
-						currentPrices[pair] = item.Last().OpenPrice;
+						currentPrices[pair] = item.Last().ClosePrice;
 					}
 					
 					manager.ProcessMarket(highsAndLows);

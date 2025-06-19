@@ -99,7 +99,13 @@ public class SkisStrategy : IStrategy<SkisData, SkisOptions, StrategyResult<Skis
 		}
 
 		return new StrategyResult<SkisData>(
-			new SkisData(trend, trendSteps, lastHigh, lastLow),
+			data with
+			{
+				Trend = trend,
+				TrendSteps = trendSteps,
+				LastHigh = lastHigh,
+				LastLow = lastLow,
+			},
 			orders,
 			closeLongs,
 			closeShorts

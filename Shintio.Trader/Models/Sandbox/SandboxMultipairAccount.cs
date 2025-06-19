@@ -259,10 +259,10 @@ public class TradeMultipairAccount
 
 		foreach (var order in orders)
 		{
-			var quantityWithLeverage = order.Quantity * order.Leverage;
+			var quantityWithLeverage = order.TotalQuantity;
 			totalQuantityWithLeverage += quantityWithLeverage;
 			weightedSum += order.Price * quantityWithLeverage;
-			totalCommission += order.TotalQuantity * 2 * CommissionPercent * order.Leverage;
+			totalCommission += quantityWithLeverage * 2 * CommissionPercent;
 		}
 
 		if (totalQuantityWithLeverage == 0)
