@@ -42,7 +42,7 @@ public class StrategiesBenchmark6 : BackgroundService
 
 	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 	{
-		var start = new DateTime(2025, 6, 1, 0, 0, 0);
+		var start = new DateTime(2025, 6, 12, 22, 40, 0);
 		var end = new DateTime(2025, 6, 30);
 
 		var collectStep = TimeSpan.FromHours(1);
@@ -52,7 +52,7 @@ public class StrategiesBenchmark6 : BackgroundService
 		var managers = new List<SkisMultipairSandboxStrategyManager>()
 		{
 			new(
-				1511.54m,
+				1511,
 				BaseCommissionPercent,
 				new Dictionary<string, SkisPairInfo>()
 				{
@@ -84,7 +84,7 @@ public class StrategiesBenchmark6 : BackgroundService
 					[CurrencyPair.PNUT_USDT] = new SkisPairInfo(
 						new SkisData(Trend.Flat, 0, 0, decimal.MaxValue),
 						new SkisOptions(5m, 10m, 0.0360m, 0.0210m),
-						10000, 10000, 0.1m, 0.9m
+						10, 100, 0.2m, 0.9m
 					),
 				},
 				1
@@ -106,7 +106,7 @@ public class StrategiesBenchmark6 : BackgroundService
 					pairs["ETHUSDT"],
 					manager.Account.Balance,
 					manager.Account.CalculateTotalCurrentQuantity(pairs),
-					manager.Account.CalculateOrdersCurrentQuantity(pairs),
+					manager.Account.Orders.Sum(p => p.Value.Sum(o => o.Quantity)),
 					pairs.ToDictionary(
 						p => p.Key,
 						// p => (decimal)(manager.Account.GetLongs(p.Key).Count() - manager.Account.GetShorts(p.Key).Count()))
