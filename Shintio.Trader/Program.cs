@@ -100,6 +100,7 @@ appBuilder.Services.AddSingleton<StrategiesRunner>();
 // appBuilder.Services.AddHostedService<StrategiesBenchmark4>();
 // appBuilder.Services.AddHostedService<StrategiesBenchmark5>();
 appBuilder.Services.AddHostedService<StrategiesBenchmark6>();
+// appBuilder.Services.AddHostedService<KlineDownloader>();
 // appBuilder.Services.AddHostedService<StrategiesRunner>();
 
 // appBuilder.Services.AddHostedService<TraderService>();
