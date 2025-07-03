@@ -38,6 +38,8 @@ public class TraderService : BackgroundService
 		[CurrencyPair._1000PEPE_USDT] = new(20, 70, 0.1m, 0.7m),
 		[CurrencyPair.WIF_USDT] = new(20, 85, 0.45m, 0.7m),
 		[CurrencyPair.ETH_USDT] = new(40, 200, 0.3m, 0.9m),
+		[CurrencyPair.BTC_USDT] = new(40, 200, 0.3m, 0.9m),
+		[CurrencyPair.BNB_USDT] = new(40, 200, 0.3m, 0.9m),
 		// [CurrencyPair.NEAR_USDT] = new(35, 145, 0.6m, 0.8m),
 		[CurrencyPair.PNUT_USDT] = new(10, 100, 0.15m, 0.75m),
 	};
