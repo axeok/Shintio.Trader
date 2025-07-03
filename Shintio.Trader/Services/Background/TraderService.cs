@@ -392,6 +392,8 @@ public class TraderService : BackgroundService
 					await RunStrategy(p);
 				}
 
+				await LogBalance();
+
 				break;
 			case "/close" when await ValidatePair(pair):
 				await CloseOrders(pair!);
