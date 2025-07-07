@@ -34,8 +34,8 @@ public class TestPredictorService : BackgroundService
 
 	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 	{
-		var start = new DateTime(2025, 1, 1);
-		var end = new DateTime(2025, 7, 30);
+		var start = new DateTime(2025, 6, 1);
+		var end = new DateTime(2025, 6, 30);
 
 		_logger.LogInformation(
 			"Загрузка исторических данных за период {Start:d} - {End:d}...",
@@ -53,7 +53,7 @@ public class TestPredictorService : BackgroundService
 
 		var modelLoaded = await _predictor.LoadModel();
 
-		await _predictor.Train(trainingData);
+		// await _predictor.Train(trainingData, 20);
 
 		_logger.LogInformation("Проверка предсказаний...");
 
@@ -68,12 +68,17 @@ public class TestPredictorService : BackgroundService
 		var skip = Random.Shared.Next(history.Count - 200);
 
 		var lastCandles = history.Skip(skip).Take(60).ToList();
-		var predictedPrice = await _predictor.Predict(lastCandles);
-
+		var lastPrice = lastCandles.Last().ClosePrice;
+		
 		var targetPrice = history.Skip(skip + 60 + 59).First().ClosePrice;
+		
+		var predictedPrice = await _predictor.Predict(lastCandles);
 
 		var loss = MoneyHelper.GetPercent(targetPrice, predictedPrice);
 
-		_logger.LogInformation(Invariant($"{targetPrice} -> {predictedPrice} ({Math.Abs(loss * 100):f2}%)"));
+		var isUp = lastPrice < targetPrice;
+		var correct = isUp ? lastPrice < predictedPrice : lastPrice > predictedPrice;
+		
+		_logger.LogInformation(Invariant($"[{correct}] {targetPrice} -> {predictedPrice} ({Math.Abs(loss * 100):f2}%)"));
 	}
 }

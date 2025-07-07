@@ -14,10 +14,10 @@ namespace Shintio.Trader.Prediction.Predictors;
 
 public class KlinePredictor
 {
-	private const int BatchSize = 128;
+	private const int BatchSize = 64;
 
-	private const float LearningRate = 0.001f;
-	private const float Dropout = 0.3f;
+	private const float LearningRate = 0.00001f;
+	private const float Dropout = 0f;
 
 	private PredictionModel _model;
 	private const string ModelPath = "price_predictor.pt";
@@ -40,7 +40,7 @@ public class KlinePredictor
 		_isModelLoaded = false;
 	}
 	
-	public async Task Train(List<KlineItem> trainingData, int epochs = 1000)
+	public async Task Train(List<KlineItem> trainingData, int epochs = 100)
 	{
 		_logger.LogInformation(
 			$"{(_isModelLoaded ? "Продолжение" : "Начало")} обучения на {trainingData.Count} свечах ({PredictionConstants.Device.type})...");
@@ -85,7 +85,7 @@ public class KlinePredictor
 
 				var loss = mse_loss(predictions.to(PredictionConstants.Device), targets.to(PredictionConstants.Device));
 
-				var absoluteError = (predictions - targets).abs().mean().item<float>();
+				var absoluteError = (predictions - targets).abs().mean().item<float>() * KlineNormalizer.MaxPrice;
 				var percentageError = ((predictions - targets).abs() / targets * 100).mean().item<float>();
 
 				loss.backward();
@@ -174,7 +174,7 @@ public class KlinePredictor
 		input = input.unsqueeze(0);
 		var prediction = _model.forward(input);
     
-		return (decimal)prediction.item<float>();
+		return (decimal)(prediction.item<float>() * KlineNormalizer.MaxPrice);
 	}
 
 	private Tensor PrepareInputTensor(IReadOnlyCollection<KlineItem> sequence)

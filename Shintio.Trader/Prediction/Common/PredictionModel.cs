@@ -33,7 +33,7 @@ public class PredictionModel : Module<Tensor, Tensor>
 		var hiddenSize4 = hiddenSize3 / 2; // 128
 		var hiddenSize5 = hiddenSize4 / 2; // 64
 		var hiddenSize6 = hiddenSize5 / 2; // 32
-		var hiddenSize7 = hiddenSize5 / 2; // 16
+		var hiddenSize7 = hiddenSize6 / 2; // 16
 
 		_inputLayer = Linear(inputSize, hiddenSize);
 		

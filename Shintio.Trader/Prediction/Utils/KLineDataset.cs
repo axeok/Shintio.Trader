@@ -55,6 +55,6 @@ public class KlineDataset : Dataset
 
 	private Tensor PrepareTargetTensor(decimal targetPrice)
 	{
-		return tensor((float)targetPrice, device: PredictionConstants.Device);
+		return tensor((float)targetPrice / KlineNormalizer.MaxPrice, device: PredictionConstants.Device);
 	}
 }
