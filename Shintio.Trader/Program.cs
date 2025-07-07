@@ -1,10 +1,6 @@
-﻿using System.Text.Json;
-using System.Text.Json.Nodes;
-using Binance.Net.Clients;
+﻿using Binance.Net.Clients;
 using Binance.Net.Interfaces.Clients;
 using CryptoExchange.Net.Authentication;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
@@ -14,10 +10,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Shintio.Trader.Configuration;
 using Shintio.Trader.Database.Contexts;
-using Shintio.Trader.Interfaces;
+using Shintio.Trader.Prediction.Predictors;
 using Shintio.Trader.Services;
 using Shintio.Trader.Services.Background;
-using Shintio.Trader.Services.Strategies;
 using Telegram.Bot;
 
 #region Builder
@@ -100,11 +95,14 @@ appBuilder.Services.AddSingleton<StrategiesRunner>();
 // appBuilder.Services.AddHostedService<StrategiesBenchmark4>();
 // appBuilder.Services.AddHostedService<StrategiesBenchmark5>();
 // appBuilder.Services.AddHostedService<StrategiesBenchmark6>();
-appBuilder.Services.AddHostedService<StrategiesBenchmark7>();
+// appBuilder.Services.AddHostedService<StrategiesBenchmark7>();
 // appBuilder.Services.AddHostedService<KlineDownloader>();
 // appBuilder.Services.AddHostedService<StrategiesRunner>();
 
 // appBuilder.Services.AddHostedService<TraderService>();
+
+appBuilder.Services.AddSingleton<KlinePredictor>();
+appBuilder.Services.AddHostedService<TestPredictorService>();
 
 #endregion
 
